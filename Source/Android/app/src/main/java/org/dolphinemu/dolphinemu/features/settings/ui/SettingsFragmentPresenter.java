@@ -551,6 +551,7 @@ public final class SettingsFragmentPresenter
     }
     sl.add(new SingleChoiceSetting(mContext, IntSetting.MAIN_CPU_CORE, R.string.cpu_core, 0,
             emuCoresEntries, emuCoresValues));
+    sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_MMU, R.string.mmu_enable, R.string.mmu_enable_description));
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_SYNC_ON_SKIP_IDLE, R.string.skip_on_skip_idle,
             R.string.skip_on_skip_idle_description));
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_JIT_FOLLOW_BRANCH, R.string.jit_follow_branch,
