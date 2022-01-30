@@ -258,6 +258,8 @@ add_executable(dolphin-emu
   NetPlay/NetPlaySetupDialog.h
   NetPlay/PadMappingDialog.cpp
   NetPlay/PadMappingDialog.h
+  QtUtils/DolphinFileDialog.cpp
+  QtUtils/DolphinFileDialog.h
   QtUtils/DoubleClickEventFilter.cpp
   QtUtils/DoubleClickEventFilter.h
   QtUtils/ElidedButton.cpp
@@ -283,10 +285,14 @@ add_executable(dolphin-emu
   QtUtils/AspectRatioWidget.h
   ResourcePackManager.cpp
   ResourcePackManager.h
+  RiivolutionBootWidget.cpp
+  RiivolutionBootWidget.h
   Settings/AdvancedPane.cpp
   Settings/AdvancedPane.h
   Settings/AudioPane.cpp
   Settings/AudioPane.h
+  Settings/BroadbandAdapterSettingsDialog.cpp
+  Settings/BroadbandAdapterSettingsDialog.h
   Settings/GameCubePane.cpp
   Settings/GameCubePane.h
   Settings/GeneralPane.cpp
@@ -357,8 +363,15 @@ if (MSVC)
   # Don't propogate warnings in qt headers to Dolphin
   target_compile_options(dolphin-emu PRIVATE /experimental:external)
   target_compile_options(dolphin-emu PRIVATE /external:W0)
-  target_compile_options(dolphin-emu PRIVATE "/external:I${Qt5Gui_PRIVATE_INCLUDE_DIRS}")
-  target_compile_options(dolphin-emu PRIVATE "/external:I${Qt5Widgets_PRIVATE_INCLUDE_DIRS}")
+  set(qtGui "")
+  set(qtGuiPriv "")
+  set(qtWidgetsPriv "")
+  list(TRANSFORM Qt5Gui_INCLUDE_DIRS PREPEND "/external:I" OUTPUT_VARIABLE qtGui)
+  list(TRANSFORM Qt5Gui_PRIVATE_INCLUDE_DIRS PREPEND "/external:I" OUTPUT_VARIABLE qtGuiPriv)
+  list(TRANSFORM Qt5Widgets_PRIVATE_INCLUDE_DIRS PREPEND "/external:I" OUTPUT_VARIABLE qtWidgetsPriv)
+  target_compile_options(dolphin-emu PRIVATE "${qtGui}")
+  target_compile_options(dolphin-emu PRIVATE "${qtGuiPriv}")
+  target_compile_options(dolphin-emu PRIVATE "${qtWidgets}")
 endif()
 
 if(WIN32)
@@ -516,8 +529,12 @@ if(APPLE)
   endforeach()
 
   # Copy MoltenVK into the bundle
-  target_sources(dolphin-emu PRIVATE "${CMAKE_SOURCE_DIR}/Externals/MoltenVK/libvulkan.dylib")
-  set_source_files_properties("${CMAKE_SOURCE_DIR}/Externals/MoltenVK/libvulkan.dylib" PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
+  if(ENABLE_VULKAN)
+    add_dependencies(dolphin-emu MoltenVK)
+    ExternalProject_Get_Property(MoltenVK SOURCE_DIR)
+    target_sources(dolphin-emu PRIVATE "${SOURCE_DIR}/Package/Release/MoltenVK/dylib/macOS/libMoltenVK.dylib")
+    set_source_files_properties("${SOURCE_DIR}/Package/Release/MoltenVK/dylib/macOS/libMoltenVK.dylib" PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks GENERATED ON)
+  endif()
 
   # Update library references to make the bundle portable
   include(DolphinPostprocessBundle)

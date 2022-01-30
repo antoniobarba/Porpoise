@@ -5,7 +5,7 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
-    compileSdkVersion 30
+    compileSdkVersion 31
 
     compileOptions {
         // Flag to enable support for the new language APIs
@@ -28,7 +28,7 @@ android {
     defaultConfig {
         applicationId "org.dolphinemu.mmjr"
         minSdkVersion 21
-        targetSdkVersion 29
+        targetSdkVersion 31
 
         versionCode getBuildVersionCode()
 

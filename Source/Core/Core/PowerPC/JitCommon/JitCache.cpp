@@ -1,12 +1,7 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-// Enable define below to enable oprofile integration. For this to work,
-// it requires at least oprofile version 0.9.4, and changing the build
-// system to link the Dolphin executable against libopagent.  Since the
-// dependency is a little inconvenient and this is possibly a slight
-// performance hit, it's not enabled by default, but it's useful for
-// locating performance issues.
+#include "Core/PowerPC/JitCommon/JitCache.h"
 
 #include <algorithm>
 #include <array>
@@ -18,7 +13,7 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/JitRegister.h"
-#include "Core/ConfigManager.h"
+#include "Core/Config/MainSettings.h"
 #include "Core/Core.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/MMU.h"
@@ -45,7 +40,7 @@ JitBaseBlockCache::~JitBaseBlockCache() = default;
 
 void JitBaseBlockCache::Init()
 {
-  JitRegister::Init(SConfig::GetInstance().m_perfDir);
+  JitRegister::Init(Config::Get(Config::MAIN_PERF_MAP_DIR));
 
   Clear();
 }
@@ -233,6 +228,16 @@ void JitBaseBlockCache::InvalidateICacheInternal(u32 physical_address, u32 addre
       destroy_block = false;
     else
       valid_block.Clear(physical_address / 32);
+  }
+  else if (length > 32)
+  {
+    // Even if we can't check the set for optimization, we still want to remove all fully covered
+    // cache lines from the valid_block set so that later calls don't try to invalidate already
+    // cleared regions.
+    const u32 covered_block_start = (physical_address + 0x1f) / 32;
+    const u32 covered_block_end = (physical_address + length) / 32;
+    for (u32 i = covered_block_start; i < covered_block_end; ++i)
+      valid_block.Clear(i);
   }
 
   if (destroy_block)

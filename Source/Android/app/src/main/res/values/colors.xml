@@ -11,7 +11,6 @@
     <color name="purple_accent">#711fff</color>
     <color name="purple_onprimary">#e91c63</color>
     <color name="purple_text_accent">@color/purple_onprimary</color>
-
     <color name="neon_red_primary">#ff3131</color>
     <color name="neon_red_primary_dark">#d22323</color>
     <color name="neon_red_accent">#ff3131</color>

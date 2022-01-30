@@ -1,24 +1,13 @@
-ANNOUNCEMENT (For new users):
+# Dolphin MMJR2 Fork
+Mainly, this fork is meant for personal use. This repo's only function at the current time is to update MMJR2 to the latest Dolphin Offical Dev Source code without scoped storage changes merged.
+If you want scoped storage, go use Dolphin Official Builds. I have no use for scoped storage, nor any changes related to it. I wont be merging these changes. Have a nice day!
 
-=============================
-
-I officially announce that I will be stopping any further development on BOTH projects and calling it quits to focus on University. Sorry to everyone that held in here for further development on |MMJR2| and for possible fixes down the line for |MMJR| .... but it really is too much for me to handle right now.
-
-Both versions are on github and I encourage determined or curious people to use the source code. However at the rate that Dolphin Official is going, down the line you might not need |MMJR| or definitely not |MMJR2| anymore. I might have time to push any PR's over to Dolphin Official from |MMJR2| for QOL stuff like the theme changer or maybe the quick menu but like I said everything is on github and free to access so anyone can do it if in case I can't. As for whether I will come back and tackle this project again ... I have no clue; I might still try to work on it little by little over time but as it stands I'm officially too tied down with IRL stuff to handle the projects anymore.
-
-So special thanks to @Lynx for his godly help and contributions and the testers; especially @Gamer 64 for his assistance over the recent months. As well as to @Jos for the great updates, knowledge and development over at Dolphin Official (https://dolphin-emu.org/download/). Thanks to everyone for supporting the app, development and my endeavors in learning coding from scratch.
-
-=================================
-
-
-# Dolphin MMJR2
 An Android-only performance-focused dolphin fork, rebased on top of latest dolphin development builds and reimplementing MMJ UX and performance improvements, plus adding our own.
 
-Grab the latest build in the [releases](https://github.com/Bankaimaster999/Dolphin-MMJR/releases) section, or check for new version in the in-app updater. Old MMJR v1.0 builds can be found at the old repository [here](https://github.com/Bankaimaster999/dolphin/releases). 1.0 and 2.0 builds can be installed without conflicts as they use different folders, but **savestates are not compatible**. We kindly ask you to avoid misusing GitHub Issues and Pull Requests.
+Grab the latest build in the [releases](https://github.com/Lumince/Dolphin-MMJR2/releases) section, or check for new version in the in-app updater. Old MMJR v1.0 builds can be found at the old repository [here](https://github.com/Bankaimaster999/dolphin/releases). 1.0 and 2.0 builds can be installed without conflicts as they use different folders, but **savestates are not compatible**. We kindly ask you to avoid misusing GitHub Issues and Pull Requests.
 
 This fork wouldn't be possible without the crazy amount of work that developers much more skilled than us put into Dolphin.
 
-Join the MMJR community at our [Discord](https://discord.gg/NZTQRpy5B3).
 
 ## Dolphin - A GameCube and Wii Emulator
 
@@ -48,6 +37,11 @@ Dolphin can only be installed on devices that satisfy the above requirements. At
 
 These instructions assume familiarity with Android development. If you do not have an
 Android dev environment set up, see [AndroidSetup.md](AndroidSetup.md).
+
+Make sure to pull submodules before building:
+```sh
+git submodule update --init
+```
 
 If using Android Studio, import the Gradle project located in `./Source/Android`.
 
@@ -122,8 +116,28 @@ These folders are installed read-only and should not be changed:
 * `Resources`: icons that are theme-agnostic
 * `Wii`: default Wii NAND contents
 
+## User Folder Structure
+
+List of user folders:
+
+* `Cache`: used to cache the ISO list
+* `Config`: configuration files
+* `Dump`: anything dumped from Dolphin
+* `GameConfig`: additional settings to be applied per-game
+* `GC`: memory cards and system BIOS
+* `Load`: custom textures
+* `Logs`: logs, if enabled
+* `ScreenShots`: screenshots taken via Dolphin
+* `StateSaves`: save states
+* `Wii`: Wii NAND contents
+
 ## Custom Textures
 
 Custom textures have to be placed in the user directory under
 `Load/Textures/[GameID]/`. You can find the Game ID by right-clicking a game
 in the ISO list and selecting "ISO Properties".
+
+## Riivolution Patches
+
+Riivolution Patches have to be placed in the user directory under
+`Load/Riivolution/`. Once you have extracted the patches here, long press on the game & select `Start with Riivolution Patches`
