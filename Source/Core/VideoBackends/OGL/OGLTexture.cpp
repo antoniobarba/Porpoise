@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "VideoBackends/OGL/OGLTexture.h"
-
+#include "VideoCommon/VideoConfig.h"
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
@@ -116,7 +116,7 @@ OGLTexture::OGLTexture(const TextureConfig& tex_config, std::string_view name)
   glActiveTexture(GL_MUTABLE_TEXTURE_INDEX);
   glBindTexture(target, m_texId);
 
-  if (!m_name.empty())
+    if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
   {
     glObjectLabel(GL_TEXTURE, m_texId, -1, m_name.c_str());
   }

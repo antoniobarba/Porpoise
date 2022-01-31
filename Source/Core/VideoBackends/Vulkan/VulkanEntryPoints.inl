@@ -35,6 +35,7 @@ VULKAN_INSTANCE_ENTRY_POINT(vkGetPhysicalDeviceSparseImageFormatProperties, true
 VULKAN_INSTANCE_ENTRY_POINT(vkDestroySurfaceKHR, false)
 VULKAN_INSTANCE_ENTRY_POINT(vkGetPhysicalDeviceSurfaceSupportKHR, false)
 VULKAN_INSTANCE_ENTRY_POINT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR, false)
+VULKAN_INSTANCE_ENTRY_POINT(vkSetDebugUtilsObjectNameEXT, false)
 VULKAN_INSTANCE_ENTRY_POINT(vkGetPhysicalDeviceSurfaceFormatsKHR, false)
 VULKAN_INSTANCE_ENTRY_POINT(vkGetPhysicalDeviceSurfacePresentModesKHR, false)
 
@@ -196,7 +197,5 @@ VULKAN_DEVICE_ENTRY_POINT(vkQueuePresentKHR, false)
 VULKAN_DEVICE_ENTRY_POINT(vkAcquireFullScreenExclusiveModeEXT, false)
 VULKAN_DEVICE_ENTRY_POINT(vkReleaseFullScreenExclusiveModeEXT, false)
 #endif
-
-VULKAN_DEVICE_ENTRY_POINT(vkSetDebugUtilsObjectNameEXT, false)
 
 #endif  // VULKAN_DEVICE_ENTRY_POINT

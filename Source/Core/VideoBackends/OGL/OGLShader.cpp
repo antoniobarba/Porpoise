@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "VideoBackends/OGL/OGLShader.h"
-
+#include "VideoCommon/VideoConfig.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 
 namespace OGL
@@ -29,7 +29,7 @@ OGLShader::OGLShader(ShaderStage stage, GLenum gl_type, GLuint gl_id, std::strin
     : AbstractShader(stage), m_id(ProgramShaderCache::GenerateShaderID()), m_type(gl_type),
       m_gl_id(gl_id), m_source(std::move(source)), m_name(std::move(name))
 {
-  if (!m_name.empty())
+    if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
   {
     glObjectLabel(GetGLShaderTypeForStage(stage), m_gl_id, -1, m_name.c_str());
   }
@@ -40,7 +40,7 @@ OGLShader::OGLShader(GLuint gl_compute_program_id, std::string source, std::stri
       m_type(GL_COMPUTE_SHADER), m_gl_compute_program_id(gl_compute_program_id),
       m_source(std::move(source)), m_name(std::move(name))
 {
-  if (!m_name.empty())
+    if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
   {
     glObjectLabel(GL_COMPUTE_SHADER, m_gl_compute_program_id, -1, m_name.c_str());
   }
