@@ -62,7 +62,7 @@ public final class StartupHandler
     if (start_files != null && start_files.length > 0)
     {
       // Start the emulation activity, send the ISO passed in and finish the main activity
-      EmulationActivity.launch(parent, start_files);
+      EmulationActivity.launch(parent, start_files, false);
       parent.finish();
     }
   }
@@ -90,7 +90,7 @@ public final class StartupHandler
     final Instant lastOpened = Instant.ofEpochMilli(lastOpen);
     if (current.isAfter(lastOpened.plus(6, ChronoUnit.HOURS)))
     {
-      new AfterDirectoryInitializationRunner().run(context, false,
+      new AfterDirectoryInitializationRunner().runWithoutLifecycle(context, false,
               NativeLibrary::ReportStartToAnalytics);
     }
   }

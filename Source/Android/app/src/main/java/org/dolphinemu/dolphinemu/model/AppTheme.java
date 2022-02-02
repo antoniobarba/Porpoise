@@ -106,7 +106,7 @@ public class AppTheme
           break;
         case AppTheme.MMJR_PURPLE:
         default:
-          themeId = R.style.Theme_DolphinEmulation_MmjrPurple;
+          themeId = R.style.Theme_DolphinSettings_MmjrPurple;
           break;
       }
     }

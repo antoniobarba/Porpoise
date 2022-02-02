@@ -57,4 +57,10 @@ jmethodID GetNetworkHelperGetNetworkGateway();
 
 jmethodID GetBooleanSupplierGet();
 
+jclass GetRiivolutionPatchesClass();
+jfieldID GetRiivolutionPatchesPointer();
+
+jclass GetWiiUpdateCallbackClass();
+jmethodID GetWiiUpdateCallbackFunction();
+
 }  // namespace IDCache

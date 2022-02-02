@@ -166,6 +166,12 @@ JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_model_GameFile_isDatel
   return static_cast<jboolean>(GetRef(env, obj)->IsDatelDisc());
 }
 
+JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_model_GameFile_isNKit(JNIEnv* env,
+                                                                                jobject obj)
+{
+  return static_cast<jboolean>(GetRef(env, obj)->IsNKit());
+}
+
 JNIEXPORT jintArray JNICALL Java_org_dolphinemu_dolphinemu_model_GameFile_getBanner(JNIEnv* env,
                                                                                     jobject obj)
 {
@@ -199,6 +205,4 @@ JNIEXPORT jobject JNICALL Java_org_dolphinemu_dolphinemu_model_GameFile_parse(JN
 
   return GameFileToJava(env, game_file);
 }
-
 }
-
