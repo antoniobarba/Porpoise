@@ -1,6 +1,11 @@
 // Copyright 2017 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+<<<<<<< HEAD
+=======
+#include "VideoBackends/Vulkan/VKShader.h"
+#include "VideoCommon/VideoConfig.h"
+>>>>>>> parent of 4cddc6ae16 (Reversion and Re-implemented Update)
 #include "Common/Align.h"
 #include "Common/Assert.h"
 
@@ -8,8 +13,6 @@
 #include "VideoBackends/Vulkan/ShaderCompiler.h"
 #include "VideoBackends/Vulkan/VKShader.h"
 #include "VideoBackends/Vulkan/VulkanContext.h"
-
-#include "VideoCommon/VideoConfig.h"
 
 namespace Vulkan
 {
@@ -19,10 +22,14 @@ VKShader::VKShader(ShaderStage stage, std::vector<u32> spv, VkShaderModule mod,
       m_compute_pipeline(VK_NULL_HANDLE), m_name(name)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
 =======
   if (!m_name.empty())
 >>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
+=======
+    if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
+>>>>>>> parent of 4cddc6ae16 (Reversion and Re-implemented Update)
   {
     VkDebugUtilsObjectNameInfoEXT name_info = {};
     name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
@@ -38,10 +45,14 @@ VKShader::VKShader(std::vector<u32> spv, VkPipeline compute_pipeline, std::strin
       m_compute_pipeline(compute_pipeline), m_name(name)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
 =======
   if (!m_name.empty())
 >>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
+=======
+    if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
+>>>>>>> parent of 4cddc6ae16 (Reversion and Re-implemented Update)
   {
     VkDebugUtilsObjectNameInfoEXT name_info = {};
     name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;

@@ -199,4 +199,6 @@ JNIEXPORT jobject JNICALL Java_org_dolphinemu_dolphinemu_model_GameFile_parse(JN
 
   return GameFileToJava(env, game_file);
 }
+
 }
+

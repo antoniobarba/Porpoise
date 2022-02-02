@@ -86,7 +86,6 @@ public class AppTheme
           themeId = R.style.Theme_DolphinSettings_LuigiGreen;
           break;
         case AppTheme.MMJR_PURPLE:
-          themeId = R.style.Theme_DolphinSettings_MmjrPurple;
         default:
           themeId = R.style.Theme_DolphinSettings_MmjrPurple;
           break;
@@ -106,9 +105,8 @@ public class AppTheme
           themeId = R.style.Theme_DolphinEmulation_LuigiGreen;
           break;
         case AppTheme.MMJR_PURPLE:
-          themeId = R.style.Theme_DolphinSettings_MmjrPurple;
         default:
-          themeId = R.style.Theme_DolphinSettings_MmjrPurple;
+          themeId = R.style.Theme_DolphinEmulation_MmjrPurple;
           break;
       }
     }
@@ -126,7 +124,6 @@ public class AppTheme
           themeId = R.style.Theme_DolphinTv_LuigiGreen;
           break;
         case AppTheme.MMJR_PURPLE:
-          themeId = R.style.Theme_DolphinTv_MmjrPurple;
         default:
           themeId = R.style.Theme_DolphinTv_MmjrPurple;
           break;
@@ -146,7 +143,6 @@ public class AppTheme
           themeId = R.style.Theme_DolphinMain_LuigiGreen;
           break;
         case AppTheme.MMJR_PURPLE:
-          themeId = R.style.Theme_DolphinMain_MmjrPurple;
         default:
           themeId = R.style.Theme_DolphinMain_MmjrPurple;
           break;

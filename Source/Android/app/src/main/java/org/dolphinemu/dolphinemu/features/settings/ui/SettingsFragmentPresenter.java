@@ -552,13 +552,18 @@ public final class SettingsFragmentPresenter
     sl.add(new SingleChoiceSetting(mContext, IntSetting.MAIN_CPU_CORE, R.string.cpu_core, 0,
             emuCoresEntries, emuCoresValues));
 <<<<<<< HEAD
+<<<<<<< HEAD
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_MMU, R.string.mmu_enable,
       R.string.mmu_enable_description));
 =======
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_MMU, R.string.mmu_enable, R.string.mmu_enable_description));
 >>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
+=======
+>>>>>>> parent of 4cddc6ae16 (Reversion and Re-implemented Update)
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_SYNC_ON_SKIP_IDLE, R.string.skip_on_skip_idle,
             R.string.skip_on_skip_idle_description));
+    sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_MMU, R.string.mmu_enable,
+      R.string.mmu_enable_description));
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_JIT_FOLLOW_BRANCH, R.string.jit_follow_branch,
       R.string.jit_follow_branch_description));
     sl.add(new CheckBoxSetting(mContext, BooleanSetting.MAIN_OVERCLOCK_ENABLE,

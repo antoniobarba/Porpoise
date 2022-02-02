@@ -11,13 +11,16 @@
 #include "jni/AndroidCommon/IDCache.h"
 #include "jni/GameList/GameFile.h"
 
+
 static UICommon::GameFileCache* GetPointer(JNIEnv* env, jobject obj)
 {
   return reinterpret_cast<UICommon::GameFileCache*>(
       env->GetLongField(obj, IDCache::GetGameFileCachePointer()));
 }
 
+
 extern "C" {
+
 
 JNIEXPORT jlong JNICALL
 Java_org_dolphinemu_dolphinemu_model_GameFileCache_newGameFileCache(JNIEnv* env, jclass)
@@ -89,4 +92,6 @@ JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_model_GameFileCache_sa
 {
   return GetPointer(env, obj)->Save();
 }
+
 }
+

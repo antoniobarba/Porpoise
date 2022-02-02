@@ -10,6 +10,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
+#include "VideoCommon/VideoConfig.h"
 
 #include "VideoBackends/Vulkan/CommandBufferManager.h"
 #include "VideoBackends/Vulkan/ObjectCache.h"
@@ -20,8 +21,6 @@
 #include "VideoBackends/Vulkan/VKTexture.h"
 #include "VideoBackends/Vulkan/VulkanContext.h"
 
-#include "VideoCommon/VideoConfig.h"
-
 namespace Vulkan
 {
 VKTexture::VKTexture(const TextureConfig& tex_config, VkDeviceMemory device_memory, VkImage image,
@@ -31,10 +30,14 @@ VKTexture::VKTexture(const TextureConfig& tex_config, VkDeviceMemory device_memo
       m_compute_layout(compute_layout), m_name(name)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
   if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
 =======
   if (!m_name.empty())
 >>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
+=======
+    if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
+>>>>>>> parent of 4cddc6ae16 (Reversion and Re-implemented Update)
   {
     VkDebugUtilsObjectNameInfoEXT name_info = {};
     name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
