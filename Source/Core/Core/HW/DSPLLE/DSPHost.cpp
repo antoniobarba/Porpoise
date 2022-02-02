@@ -8,7 +8,6 @@
 #include "Common/CommonTypes.h"
 #include "Common/Hash.h"
 #include "Common/Logging/Log.h"
-#include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/DSP/DSPAnalyzer.h"
 #include "Core/DSP/DSPCodeUtil.h"
@@ -54,7 +53,7 @@ void OSD_AddMessage(std::string str, u32 ms)
 
 bool OnThread()
 {
-  return Config::Get(Config::MAIN_DSP_THREAD);
+  return SConfig::GetInstance().bDSPThread;
 }
 
 bool IsWiiHost()
@@ -79,7 +78,7 @@ void CodeLoaded(DSPCore& dsp, const u8* ptr, size_t size)
   const u32 iram_crc = Common::HashEctor(ptr, size);
   state.SetIRAMCRC(iram_crc);
 
-  if (Config::Get(Config::MAIN_DUMP_UCODE))
+  if (SConfig::GetInstance().m_DumpUCode)
   {
     DSP::DumpDSPCode(ptr, size, iram_crc);
   }

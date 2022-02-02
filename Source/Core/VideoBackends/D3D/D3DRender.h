@@ -8,8 +8,6 @@
 #include "VideoBackends/D3D/D3DState.h"
 #include "VideoCommon/RenderBase.h"
 
-class BoundingBox;
-
 namespace DX11
 {
 class SwapChain;
@@ -64,13 +62,14 @@ public:
   void SetFullscreen(bool enable_fullscreen) override;
   bool IsFullscreen() const override;
 
+  u16 BBoxReadImpl(int index) override;
+  void BBoxWriteImpl(int index, u16 value) override;
+  void BBoxFlushImpl() override;
+
   void Flush() override;
   void WaitForGPUIdle() override;
 
   void OnConfigChanged(u32 bits) override;
-
-protected:
-  std::unique_ptr<BoundingBox> CreateBoundingBox() const override;
 
 private:
   void CheckForSwapChainChanges();

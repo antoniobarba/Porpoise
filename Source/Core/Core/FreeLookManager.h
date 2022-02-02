@@ -9,7 +9,6 @@
 #include "Common/CommonTypes.h"
 #include "InputCommon/ControllerEmu/ControllerEmu.h"
 
-class CameraControllerInput;
 class InputConfig;
 
 namespace ControllerEmu
@@ -53,7 +52,6 @@ public:
   void Update();
 
 private:
-  void UpdateInput(CameraControllerInput* camera_controller);
   ControllerEmu::Buttons* m_move_buttons;
   ControllerEmu::Buttons* m_speed_buttons;
   ControllerEmu::Buttons* m_fov_buttons;

@@ -33,28 +33,22 @@ public final class CoverHelper
       case 2: // PAL
         switch (game.getCountry())
         {
-          case 3: // Australia
-            region = "AU";
-            break;
-          case 4: // France
-            region = "FR";
-            break;
-          case 5: // Germany
+          case 2: // German
             region = "DE";
             break;
-          case 6: // Italy
-            region = "IT";
+          case 3: // French
+            region = "FR";
             break;
-          case 8: // Netherlands
-            region = "NL";
-            break;
-          case 9: // Russia
-            region = "RU";
-            break;
-          case 10: // Spain
+          case 4: // Spanish
             region = "ES";
             break;
-          case 0: // Europe
+          case 5: // Italian
+            region = "IT";
+            break;
+          case 6: // Dutch
+            region = "NL";
+            break;
+          case 1: // English
           default:
             region = "EN";
             break;

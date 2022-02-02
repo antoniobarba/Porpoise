@@ -13,6 +13,7 @@
 
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
+#include "Common/Config/Config.h"
 #include "Common/Event.h"
 #include "Common/FileUtil.h"
 #include "Common/Logging/Log.h"
@@ -20,7 +21,6 @@
 #include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "Core/System.h"
 
 // TODO: ugly
 #ifdef _WIN32
@@ -47,7 +47,6 @@
 #include "VideoCommon/PixelEngine.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
-#include "VideoCommon/TMEM.h"
 #include "VideoCommon/TextureCacheBase.h"
 #include "VideoCommon/VertexLoaderManager.h"
 #include "VideoCommon/VertexManagerBase.h"
@@ -289,7 +288,7 @@ void VideoBackendBase::PopulateBackendInfoFromUI()
 
 void VideoBackendBase::DoState(PointerWrap& p)
 {
-  if (!Core::System::GetInstance().IsDualCoreMode())
+  if (!SConfig::GetInstance().bCPUThread)
   {
     VideoCommon_DoState(p);
     return;
@@ -316,13 +315,13 @@ void VideoBackendBase::InitializeShared()
 
   CommandProcessor::Init();
   Fifo::Init();
+  OpcodeDecoder::Init();
   PixelEngine::Init();
   BPInit();
   VertexLoaderManager::Init();
   VertexShaderManager::Init();
   GeometryShaderManager::Init();
   PixelShaderManager::Init();
-  TMEM::Init();
 
   g_Config.VerifyValidity();
   UpdateActiveConfig();

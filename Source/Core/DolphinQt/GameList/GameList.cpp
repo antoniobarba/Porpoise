@@ -47,7 +47,6 @@
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HW/DVD/DVDInterface.h"
-#include "Core/HW/EXI/EXI.h"
 #include "Core/HW/EXI/EXI_Device.h"
 #include "Core/HW/WiiSave.h"
 #include "Core/WiiUtils.h"
@@ -60,7 +59,6 @@
 #include "DolphinQt/GameList/GridProxyModel.h"
 #include "DolphinQt/GameList/ListProxyModel.h"
 #include "DolphinQt/MenuBar.h"
-#include "DolphinQt/QtUtils/DolphinFileDialog.h"
 #include "DolphinQt/QtUtils/DoubleClickEventFilter.h"
 #include "DolphinQt/QtUtils/ModalMessageBox.h"
 #include "DolphinQt/QtUtils/ParallelProgressDialog.h"
@@ -219,25 +217,26 @@ GameList::~GameList()
 
 void GameList::UpdateColumnVisibility()
 {
+  const auto& config = SConfig::GetInstance();
   const auto SetVisiblity = [this](const GameListModel::Column column, const bool is_visible) {
     m_list->setColumnHidden(static_cast<int>(column), !is_visible);
   };
 
   using Column = GameListModel::Column;
-  SetVisiblity(Column::Platform, Config::Get(Config::MAIN_GAMELIST_COLUMN_PLATFORM));
-  SetVisiblity(Column::Banner, Config::Get(Config::MAIN_GAMELIST_COLUMN_BANNER));
-  SetVisiblity(Column::Title, Config::Get(Config::MAIN_GAMELIST_COLUMN_TITLE));
-  SetVisiblity(Column::Description, Config::Get(Config::MAIN_GAMELIST_COLUMN_DESCRIPTION));
-  SetVisiblity(Column::Maker, Config::Get(Config::MAIN_GAMELIST_COLUMN_MAKER));
-  SetVisiblity(Column::ID, Config::Get(Config::MAIN_GAMELIST_COLUMN_GAME_ID));
-  SetVisiblity(Column::Country, Config::Get(Config::MAIN_GAMELIST_COLUMN_REGION));
-  SetVisiblity(Column::Size, Config::Get(Config::MAIN_GAMELIST_COLUMN_FILE_SIZE));
-  SetVisiblity(Column::FileName, Config::Get(Config::MAIN_GAMELIST_COLUMN_FILE_NAME));
-  SetVisiblity(Column::FilePath, Config::Get(Config::MAIN_GAMELIST_COLUMN_FILE_PATH));
-  SetVisiblity(Column::FileFormat, Config::Get(Config::MAIN_GAMELIST_COLUMN_FILE_FORMAT));
-  SetVisiblity(Column::BlockSize, Config::Get(Config::MAIN_GAMELIST_COLUMN_BLOCK_SIZE));
-  SetVisiblity(Column::Compression, Config::Get(Config::MAIN_GAMELIST_COLUMN_COMPRESSION));
-  SetVisiblity(Column::Tags, Config::Get(Config::MAIN_GAMELIST_COLUMN_TAGS));
+  SetVisiblity(Column::Platform, config.m_showSystemColumn);
+  SetVisiblity(Column::Banner, config.m_showBannerColumn);
+  SetVisiblity(Column::Title, config.m_showTitleColumn);
+  SetVisiblity(Column::Description, config.m_showDescriptionColumn);
+  SetVisiblity(Column::Maker, config.m_showMakerColumn);
+  SetVisiblity(Column::ID, config.m_showIDColumn);
+  SetVisiblity(Column::Country, config.m_showRegionColumn);
+  SetVisiblity(Column::Size, config.m_showSizeColumn);
+  SetVisiblity(Column::FileName, config.m_showFileNameColumn);
+  SetVisiblity(Column::FilePath, config.m_showFilePathColumn);
+  SetVisiblity(Column::FileFormat, config.m_showFileFormatColumn);
+  SetVisiblity(Column::BlockSize, config.m_showBlockSizeColumn);
+  SetVisiblity(Column::Compression, config.m_showCompressionColumn);
+  SetVisiblity(Column::Tags, config.m_showTagsColumn);
 }
 
 void GameList::MakeEmptyView()
@@ -255,7 +254,7 @@ void GameList::MakeEmptyView()
   m_empty->installEventFilter(event_filter);
   connect(event_filter, &DoubleClickEventFilter::doubleClicked, [this] {
     auto current_dir = QDir::currentPath();
-    auto dir = DolphinFileDialog::getExistingDirectory(this, tr("Select a Directory"), current_dir);
+    auto dir = QFileDialog::getExistingDirectory(this, tr("Select a Directory"), current_dir);
     if (!dir.isEmpty())
       Settings::Instance().AddPath(dir);
   });
@@ -286,16 +285,6 @@ void GameList::MakeGridView()
   m_grid = new QListView(this);
   m_grid->setModel(m_grid_proxy);
   m_grid->setSelectionMode(QAbstractItemView::ExtendedSelection);
-
-  // Row in this context refers to the full set of columns (banner, title, region, etc.) associated
-  // with a single game rather than multiple games presented visually on the same row. Even though
-  // most of these elements are hidden in grid view selecting all of them allows us to use
-  // selectedRow() which only returns rows where all elements are selected. In addition to improving
-  // consistency with list view this avoids an edge case where clicking a game in grid mode selected
-  // only the first element of the row but ctrl+a selected every element of the row, making a bunch
-  // of duplicate selections for each game.
-  m_grid->setSelectionBehavior(QAbstractItemView::SelectRows);
-
   m_grid->setViewMode(QListView::IconMode);
   m_grid->setResizeMode(QListView::Adjust);
   m_grid->setUniformItemSizes(true);
@@ -352,23 +341,17 @@ void GameList::ShowContextMenu(const QPoint&)
   else
   {
     const auto game = GetSelectedGame();
-    const bool is_mod_descriptor = game->IsModDescriptor();
     DiscIO::Platform platform = game->GetPlatform();
     menu->addAction(tr("&Properties"), this, &GameList::OpenProperties);
-    if (!is_mod_descriptor && platform != DiscIO::Platform::ELFOrDOL)
+    if (platform != DiscIO::Platform::ELFOrDOL)
     {
       menu->addAction(tr("&Wiki"), this, &GameList::OpenWiki);
     }
 
     menu->addSeparator();
 
-    if (!is_mod_descriptor && DiscIO::IsDisc(platform))
+    if (DiscIO::IsDisc(platform))
     {
-      menu->addAction(tr("Start with Riivolution Patches..."), this,
-                      &GameList::StartWithRiivolution);
-
-      menu->addSeparator();
-
       menu->addAction(tr("Set as &Default ISO"), this, &GameList::SetDefaultISO);
 
       if (game->ShouldAllowConversion())
@@ -383,7 +366,7 @@ void GameList::ShowContextMenu(const QPoint&)
       menu->addSeparator();
     }
 
-    if (!is_mod_descriptor && platform == DiscIO::Platform::WiiDisc)
+    if (platform == DiscIO::Platform::WiiDisc)
     {
       auto* perform_disc_update = menu->addAction(tr("Perform System Update"), this,
                                                   [this, file_path = game->GetFilePath()] {
@@ -395,7 +378,7 @@ void GameList::ShowContextMenu(const QPoint&)
       perform_disc_update->setEnabled(!Core::IsRunning() || !SConfig::GetInstance().bWii);
     }
 
-    if (!is_mod_descriptor && platform == DiscIO::Platform::WiiWAD)
+    if (platform == DiscIO::Platform::WiiWAD)
     {
       QAction* wad_install_action = new QAction(tr("Install to the NAND"), menu);
       QAction* wad_uninstall_action = new QAction(tr("Uninstall from the NAND"), menu);
@@ -421,15 +404,14 @@ void GameList::ShowContextMenu(const QPoint&)
       menu->addSeparator();
     }
 
-    if (!is_mod_descriptor &&
-        (platform == DiscIO::Platform::WiiWAD || platform == DiscIO::Platform::WiiDisc))
+    if (platform == DiscIO::Platform::WiiWAD || platform == DiscIO::Platform::WiiDisc)
     {
       menu->addAction(tr("Open Wii &Save Folder"), this, &GameList::OpenWiiSaveFolder);
       menu->addAction(tr("Export Wii Save"), this, &GameList::ExportWiiSave);
       menu->addSeparator();
     }
 
-    if (!is_mod_descriptor && platform == DiscIO::Platform::GameCubeDisc)
+    if (platform == DiscIO::Platform::GameCubeDisc)
     {
       menu->addAction(tr("Open GameCube &Save Folder"), this, &GameList::OpenGCSaveFolder);
       menu->addSeparator();
@@ -507,7 +489,7 @@ void GameList::OpenProperties()
 
 void GameList::ExportWiiSave()
 {
-  const QString export_dir = DolphinFileDialog::getExistingDirectory(
+  const QString export_dir = QFileDialog::getExistingDirectory(
       this, tr("Select Export Directory"), QString::fromStdString(File::GetUserPath(D_USER_IDX)),
       QFileDialog::ShowDirsOnly);
   if (export_dir.isEmpty())
@@ -604,15 +586,6 @@ void GameList::UninstallWAD()
   result_dialog.exec();
 }
 
-void GameList::StartWithRiivolution()
-{
-  const auto game = GetSelectedGame();
-  if (!game)
-    return;
-
-  emit OnStartWithRiivolution(*game);
-}
-
 void GameList::SetDefaultISO()
 {
   const auto game = GetSelectedGame();
@@ -662,22 +635,19 @@ void GameList::OpenGCSaveFolder()
 
   bool found = false;
 
-  using ExpansionInterface::Slot;
-
-  for (Slot slot : ExpansionInterface::MEMCARD_SLOTS)
+  for (int i = 0; i < 2; i++)
   {
     QUrl url;
-    const ExpansionInterface::EXIDeviceType current_exi_device =
-        Config::Get(Config::GetInfoForEXIDevice(slot));
-    switch (current_exi_device)
+    switch (SConfig::GetInstance().m_EXIDevice[i])
     {
-    case ExpansionInterface::EXIDeviceType::MemoryCardFolder:
+    case ExpansionInterface::EXIDEVICE_MEMORYCARDFOLDER:
     {
       std::string path = StringFromFormat("%s/%s/%s", File::GetUserPath(D_GCUSER_IDX).c_str(),
                                           SConfig::GetDirectoryForRegion(game->GetRegion()),
-                                          slot == Slot::A ? "Card A" : "Card B");
+                                          i == 0 ? "Card A" : "Card B");
 
-      std::string override_path = Config::Get(Config::GetInfoForGCIPathOverride(slot));
+      std::string override_path = i == 0 ? Config::Get(Config::MAIN_GCI_FOLDER_A_PATH_OVERRIDE) :
+                                           Config::Get(Config::MAIN_GCI_FOLDER_B_PATH_OVERRIDE);
 
       if (!override_path.empty())
         path = override_path;
@@ -693,9 +663,10 @@ void GameList::OpenGCSaveFolder()
       }
       break;
     }
-    case ExpansionInterface::EXIDeviceType::MemoryCard:
+    case ExpansionInterface::EXIDEVICE_MEMORYCARD:
     {
-      std::string memcard_path = Config::Get(Config::GetInfoForMemcardPath(slot));
+      std::string memcard_path = i == 0 ? Config::Get(Config::MAIN_MEMCARD_A_PATH) :
+                                          Config::Get(Config::MAIN_MEMCARD_B_PATH);
 
       std::string memcard_dir;
 
@@ -818,30 +789,23 @@ void GameList::ChangeDisc()
   Core::RunAsCPUThread([file_path = game->GetFilePath()] { DVDInterface::ChangeDisc(file_path); });
 }
 
-QAbstractItemView* GameList::GetActiveView() const
-{
-  if (currentWidget() == m_list)
-  {
-    return m_list;
-  }
-  return m_grid;
-}
-
-QSortFilterProxyModel* GameList::GetActiveProxyModel() const
-{
-  if (currentWidget() == m_list)
-  {
-    return m_list_proxy;
-  }
-  return m_grid_proxy;
-}
-
 std::shared_ptr<const UICommon::GameFile> GameList::GetSelectedGame() const
 {
-  QItemSelectionModel* const sel_model = GetActiveView()->selectionModel();
+  QAbstractItemView* view;
+  QSortFilterProxyModel* proxy;
+  if (currentWidget() == m_list)
+  {
+    view = m_list;
+    proxy = m_list_proxy;
+  }
+  else
+  {
+    view = m_grid;
+    proxy = m_grid_proxy;
+  }
+  QItemSelectionModel* sel_model = view->selectionModel();
   if (sel_model->hasSelection())
   {
-    QSortFilterProxyModel* const proxy = GetActiveProxyModel();
     QModelIndex model_index = proxy->mapToSource(sel_model->selectedIndexes()[0]);
     return m_model.GetGameFile(model_index.row());
   }
@@ -850,15 +814,27 @@ std::shared_ptr<const UICommon::GameFile> GameList::GetSelectedGame() const
 
 QList<std::shared_ptr<const UICommon::GameFile>> GameList::GetSelectedGames() const
 {
+  QAbstractItemView* view;
+  QSortFilterProxyModel* proxy;
+  if (currentWidget() == m_list)
+  {
+    view = m_list;
+    proxy = m_list_proxy;
+  }
+  else
+  {
+    view = m_grid;
+    proxy = m_grid_proxy;
+  }
   QList<std::shared_ptr<const UICommon::GameFile>> selected_list;
-  QItemSelectionModel* const sel_model = GetActiveView()->selectionModel();
-
+  QItemSelectionModel* sel_model = view->selectionModel();
   if (sel_model->hasSelection())
   {
-    const QModelIndexList index_list = sel_model->selectedRows();
+    QModelIndexList index_list =
+        currentWidget() == m_list ? sel_model->selectedRows() : sel_model->selectedIndexes();
     for (const auto& index : index_list)
     {
-      const QModelIndex model_index = GetActiveProxyModel()->mapToSource(index);
+      QModelIndex model_index = proxy->mapToSource(index);
       selected_list.push_back(m_model.GetGameFile(model_index.row()));
     }
   }
@@ -867,7 +843,8 @@ QList<std::shared_ptr<const UICommon::GameFile>> GameList::GetSelectedGames() co
 
 bool GameList::HasMultipleSelected() const
 {
-  return GetActiveView()->selectionModel()->selectedRows().size() > 1;
+  return currentWidget() == m_list ? m_list->selectionModel()->selectedRows().size() > 1 :
+                                     m_grid->selectionModel()->selectedIndexes().size() > 1;
 }
 
 std::shared_ptr<const UICommon::GameFile> GameList::FindGame(const std::string& path) const

@@ -1,12 +1,11 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/PowerPC/Jit64/Jit.h"
-
 #include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/MsgHandler.h"
 #include "Common/x64Emitter.h"
+#include "Core/PowerPC/Jit64/Jit.h"
 #include "Core/PowerPC/Jit64/RegCache/JitRegCache.h"
 #include "Core/PowerPC/Jit64Common/Jit64Constants.h"
 
@@ -34,7 +33,6 @@ void Jit64::ps_sum(UGeckoInstruction inst)
   INSTRUCTION_START
   JITDISABLE(bJITPairedOff);
   FALLBACK_IF(inst.Rc);
-  FALLBACK_IF(jo.fp_exceptions);
 
   int d = inst.FD;
   int a = inst.FA;
@@ -86,7 +84,6 @@ void Jit64::ps_muls(UGeckoInstruction inst)
   INSTRUCTION_START
   JITDISABLE(bJITPairedOff);
   FALLBACK_IF(inst.Rc);
-  FALLBACK_IF(jo.fp_exceptions);
 
   int d = inst.FD;
   int a = inst.FA;
@@ -155,7 +152,6 @@ void Jit64::ps_rsqrte(UGeckoInstruction inst)
   INSTRUCTION_START
   JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
-  FALLBACK_IF(jo.fp_exceptions || jo.div_by_zero_exceptions);
   int b = inst.FB;
   int d = inst.FD;
 
@@ -180,7 +176,6 @@ void Jit64::ps_res(UGeckoInstruction inst)
   INSTRUCTION_START
   JITDISABLE(bJITFloatingPointOff);
   FALLBACK_IF(inst.Rc);
-  FALLBACK_IF(jo.fp_exceptions || jo.div_by_zero_exceptions);
   int b = inst.FB;
   int d = inst.FD;
 
@@ -204,7 +199,6 @@ void Jit64::ps_cmpXX(UGeckoInstruction inst)
 {
   INSTRUCTION_START
   JITDISABLE(bJITFloatingPointOff);
-  FALLBACK_IF(jo.fp_exceptions);
 
   FloatCompare(inst, !!(inst.SUBOP10 & 64));
 }

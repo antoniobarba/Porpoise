@@ -5,8 +5,12 @@ def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
+<<<<<<< HEAD
     compileSdkVersion 31
     ndkVersion "23.0.7599858"
+=======
+    compileSdkVersion 30
+>>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
 
     compileOptions {
         // Flag to enable support for the new language APIs
@@ -29,7 +33,7 @@ android {
     defaultConfig {
         applicationId "org.dolphinemu.mmjr"
         minSdkVersion 21
-        targetSdkVersion 31
+        targetSdkVersion 29
 
         versionCode getBuildVersionCode()
 

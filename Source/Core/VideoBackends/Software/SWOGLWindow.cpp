@@ -1,8 +1,6 @@
 // Copyright 2015 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoBackends/Software/SWOGLWindow.h"
-
 #include <memory>
 
 #include "Common/GL/GLContext.h"
@@ -10,6 +8,7 @@
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 
+#include "VideoBackends/Software/SWOGLWindow.h"
 #include "VideoBackends/Software/SWTexture.h"
 
 SWOGLWindow::SWOGLWindow() = default;

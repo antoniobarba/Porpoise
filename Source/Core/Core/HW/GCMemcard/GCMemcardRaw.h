@@ -17,11 +17,10 @@ class PointerWrap;
 class MemoryCard : public MemoryCardBase
 {
 public:
-  MemoryCard(const std::string& filename, ExpansionInterface::Slot card_slot,
+  MemoryCard(const std::string& filename, int card_index,
              u16 size_mbits = Memcard::MBIT_SIZE_MEMORY_CARD_2043);
   ~MemoryCard();
-  static void CheckPath(std::string& memcardPath, const std::string& gameRegion,
-                        ExpansionInterface::Slot slot);
+  static void CheckPath(std::string& memcardPath, const std::string& gameRegion, bool isSlotA);
   void FlushThread();
   void MakeDirty();
 
@@ -32,8 +31,6 @@ public:
   void DoState(PointerWrap& p) override;
 
 private:
-  bool IsAddressInBounds(u32 address) const { return address <= (m_memory_card_size - 1); }
-
   std::string m_filename;
   std::unique_ptr<u8[]> m_memcard_data;
   std::unique_ptr<u8[]> m_flush_buffer;
@@ -41,5 +38,4 @@ private:
   std::mutex m_flush_mutex;
   Common::Event m_flush_trigger;
   Common::Flag m_dirty;
-  u32 m_memory_card_size;
 };

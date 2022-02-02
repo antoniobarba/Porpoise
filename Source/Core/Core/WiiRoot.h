@@ -3,18 +3,6 @@
 
 #pragma once
 
-#include <optional>
-#include <vector>
-
-#include "DiscIO/RiivolutionPatcher.h"
-
-class BootSessionData;
-
-namespace IOS::HLE::FS
-{
-struct NandRedirect;
-}
-
 namespace Core
 {
 enum class RestoreReason
@@ -33,10 +21,6 @@ void BackupWiiSettings();
 void RestoreWiiSettings(RestoreReason reason);
 
 // Initialize or clean up the filesystem contents.
-void InitializeWiiFileSystemContents(
-    std::optional<DiscIO::Riivolution::SavegameRedirect> save_redirect,
-    const BootSessionData& boot_session_data);
-void CleanUpWiiFileSystemContents(const BootSessionData& boot_session_data);
-
-const std::vector<IOS::HLE::FS::NandRedirect>& GetActiveNandRedirects();
+void InitializeWiiFileSystemContents();
+void CleanUpWiiFileSystemContents();
 }  // namespace Core

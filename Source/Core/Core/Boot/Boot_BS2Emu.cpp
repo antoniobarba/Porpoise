@@ -16,7 +16,6 @@
 
 #include "Core/Boot/Boot.h"
 #include "Core/CommonTitles.h"
-#include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/HLE/HLE.h"
@@ -34,7 +33,6 @@
 #include "Core/PowerPC/PowerPC.h"
 
 #include "DiscIO/Enums.h"
-#include "DiscIO/RiivolutionPatcher.h"
 #include "DiscIO/VolumeDisc.h"
 
 namespace
@@ -89,8 +87,7 @@ void CBoot::SetupBAT(bool is_wii)
   PowerPC::IBATUpdated();
 }
 
-bool CBoot::RunApploader(bool is_wii, const DiscIO::VolumeDisc& volume,
-                         const std::vector<DiscIO::Riivolution::Patch>& riivolution_patches)
+bool CBoot::RunApploader(bool is_wii, const DiscIO::VolumeDisc& volume)
 {
   const DiscIO::Partition partition = volume.GetGamePartition();
 
@@ -151,8 +148,6 @@ bool CBoot::RunApploader(bool is_wii, const DiscIO::VolumeDisc& volume,
                  ram_address, length);
     DVDRead(volume, dvd_offset, ram_address, length, partition);
 
-    DiscIO::Riivolution::ApplyApploaderMemoryPatches(riivolution_patches, ram_address, length);
-
     PowerPC::ppcState.gpr[3] = 0x81300004;
     PowerPC::ppcState.gpr[4] = 0x81300008;
     PowerPC::ppcState.gpr[5] = 0x8130000c;
@@ -208,8 +203,7 @@ void CBoot::SetupGCMemory()
 // GameCube Bootstrap 2 HLE:
 // copy the apploader to 0x81200000
 // execute the apploader, function by function, using the above utility.
-bool CBoot::EmulatedBS2_GC(const DiscIO::VolumeDisc& volume,
-                           const std::vector<DiscIO::Riivolution::Patch>& riivolution_patches)
+bool CBoot::EmulatedBS2_GC(const DiscIO::VolumeDisc& volume)
 {
   INFO_LOG_FMT(BOOT, "Faking GC BS2...");
 
@@ -246,7 +240,7 @@ bool CBoot::EmulatedBS2_GC(const DiscIO::VolumeDisc& volume,
   // Global pointer to Small Data Area Base (Luigi's Mansion's apploader uses it)
   PowerPC::ppcState.gpr[13] = ntsc ? 0x81465320 : 0x814b4fc0;
 
-  return RunApploader(/*is_wii*/ false, volume, riivolution_patches);
+  return RunApploader(/*is_wii*/ false, volume);
 }
 
 static DiscIO::Region CodeRegion(char c)
@@ -302,7 +296,7 @@ bool CBoot::SetupWiiMemory(IOS::HLE::IOSC::ConsoleType console_type)
       model = gen.GetValue("MODEL");
 
       bool region_matches = false;
-      if (Config::Get(Config::MAIN_OVERRIDE_REGION_SETTINGS))
+      if (SConfig::GetInstance().bOverrideRegionSettings)
       {
         region_matches = true;
       }
@@ -442,8 +436,7 @@ static void WriteEmptyPlayRecord()
 // Wii Bootstrap 2 HLE:
 // copy the apploader to 0x81200000
 // execute the apploader
-bool CBoot::EmulatedBS2_Wii(const DiscIO::VolumeDisc& volume,
-                            const std::vector<DiscIO::Riivolution::Patch>& riivolution_patches)
+bool CBoot::EmulatedBS2_Wii(const DiscIO::VolumeDisc& volume)
 {
   INFO_LOG_FMT(BOOT, "Faking Wii BS2...");
   if (volume.GetVolumeType() != DiscIO::Platform::WiiDisc)
@@ -462,13 +455,8 @@ bool CBoot::EmulatedBS2_Wii(const DiscIO::VolumeDisc& volume,
     state->discstate = 0x01;
   });
 
-  // The system menu clears the RTC flags.
-  // However, the system menu also updates the disc cache when this happens; see
-  // https://wiibrew.org/wiki/MX23L4005#DI and
-  // https://wiibrew.org/wiki//title/00000001/00000002/data/cache.dat for details. If we clear the
-  // RTC flags, then the system menu thinks the disc cache is up to date, and will show the wrong
-  // disc in the disc channel (and reboot the first time the disc is opened)
-  // ExpansionInterface::g_rtc_flags.m_hex = 0;
+  // The system menu clears the RTC flags
+  ExpansionInterface::g_rtc_flags.m_hex = 0;
 
   // While reading a disc, the system menu reads the first partition table
   // (0x20 bytes from 0x00040020) and stores a pointer to the data partition entry.
@@ -505,7 +493,7 @@ bool CBoot::EmulatedBS2_Wii(const DiscIO::VolumeDisc& volume,
 
   PowerPC::ppcState.gpr[1] = 0x816ffff0;  // StackPointer
 
-  if (!RunApploader(/*is_wii*/ true, volume, riivolution_patches))
+  if (!RunApploader(/*is_wii*/ true, volume))
     return false;
 
   // The Apploader probably just overwrote values needed for RAM Override.  Run this again!
@@ -520,9 +508,7 @@ bool CBoot::EmulatedBS2_Wii(const DiscIO::VolumeDisc& volume,
 
 // Returns true if apploader has run successfully. If is_wii is true, the disc
 // that volume refers to must currently be inserted into the emulated disc drive.
-bool CBoot::EmulatedBS2(bool is_wii, const DiscIO::VolumeDisc& volume,
-                        const std::vector<DiscIO::Riivolution::Patch>& riivolution_patches)
+bool CBoot::EmulatedBS2(bool is_wii, const DiscIO::VolumeDisc& volume)
 {
-  return is_wii ? EmulatedBS2_Wii(volume, riivolution_patches) :
-                  EmulatedBS2_GC(volume, riivolution_patches);
+  return is_wii ? EmulatedBS2_Wii(volume) : EmulatedBS2_GC(volume);
 }

@@ -1,8 +1,6 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "DiscIO/Blob.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <limits>
@@ -15,6 +13,7 @@
 #include "Common/IOFile.h"
 #include "Common/MsgHandler.h"
 
+#include "DiscIO/Blob.h"
 #include "DiscIO/CISOBlob.h"
 #include "DiscIO/CompressedBlob.h"
 #include "DiscIO/DirectoryBlob.h"
@@ -50,8 +49,6 @@ std::string GetName(BlobType blob_type, bool translate)
     return "WIA";
   case BlobType::RVZ:
     return "RVZ";
-  case BlobType::MOD_DESCRIPTOR:
-    return translate_str("Mod");
   default:
     return "";
   }

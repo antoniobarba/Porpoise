@@ -1,8 +1,6 @@
 // Copyright 2012 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoCommon/FPSCounter.h"
-
 #include <fstream>
 #include <iomanip>
 
@@ -10,6 +8,7 @@
 #include "Common/FileUtil.h"
 #include "Common/Timer.h"
 #include "Core/Core.h"
+#include "VideoCommon/FPSCounter.h"
 #include "VideoCommon/VideoConfig.h"
 
 #ifdef ANDROID

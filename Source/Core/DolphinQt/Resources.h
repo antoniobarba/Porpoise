@@ -5,7 +5,6 @@
 
 #include <QList>
 #include <QPixmap>
-#include <string_view>
 
 namespace DiscIO
 {
@@ -31,16 +30,16 @@ public:
 
   static QPixmap GetMisc(MiscID id);
 
-  static QIcon GetScaledIcon(std::string_view name);
-  static QIcon GetScaledThemeIcon(std::string_view name);
+  static QIcon GetScaledIcon(const std::string& name);
+  static QIcon GetScaledThemeIcon(const std::string& name);
   static QIcon GetAppIcon();
 
-  static QPixmap GetScaledPixmap(std::string_view name);
+  static QPixmap GetScaledPixmap(const std::string& name);
 
 private:
   Resources() {}
-  static QIcon GetIcon(std::string_view name, const QString& dir);
-  static QPixmap GetPixmap(std::string_view name, const QString& dir);
+  static QIcon GetIcon(const QString& name, const QString& dir);
+  static QPixmap GetPixmap(const QString& name, const QString& dir);
 
   static QList<QPixmap> m_platforms;
   static QList<QPixmap> m_countries;

@@ -328,7 +328,7 @@ void InstallExceptionHandler()
   signal_stack.ss_size = SIGSTKSZ;
   signal_stack.ss_flags = 0;
   if (sigaltstack(&signal_stack, nullptr))
-    PanicAlertFmt("sigaltstack failed");
+    PanicAlert("sigaltstack failed");
   struct sigaction sa;
   sa.sa_handler = nullptr;
   sa.sa_sigaction = &sigsegv_handler;

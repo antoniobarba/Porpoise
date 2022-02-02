@@ -40,7 +40,9 @@ AnalogStick::ReshapeData AnalogStick::GetReshapableState(bool adjusted) const
   if (!adjusted)
     return {x, y};
 
-  return Reshape(x, y, GetModifierInput()->GetState());
+  const ControlState modifier = controls[4]->GetState();
+
+  return Reshape(x, y, modifier);
 }
 
 AnalogStick::StateData AnalogStick::GetState() const
@@ -51,11 +53,6 @@ AnalogStick::StateData AnalogStick::GetState() const
 ControlState AnalogStick::GetGateRadiusAtAngle(double ang) const
 {
   return m_stick_gate->GetRadiusAtAngle(ang);
-}
-
-Control* AnalogStick::GetModifierInput() const
-{
-  return controls[4].get();
 }
 
 OctagonAnalogStick::OctagonAnalogStick(const char* name_, ControlState gate_radius)

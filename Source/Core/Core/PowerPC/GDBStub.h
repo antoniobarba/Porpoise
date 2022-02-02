@@ -6,24 +6,38 @@
 #pragma once
 
 #include "Common/CommonTypes.h"
-#include "Core/CoreTiming.h"
 
-namespace GDBStub
+#ifndef MSG_WAITALL
+#define MSG_WAITALL (8)
+#endif
+
+typedef enum
 {
-enum class Signal
+  GDB_SIGTRAP = 5,
+  GDB_SIGTERM = 15,
+} gdb_signals;
+
+typedef enum
 {
-  Sigtrap = 5,
-  Sigterm = 15,
-};
+  GDB_BP_TYPE_NONE = 0,
+  GDB_BP_TYPE_X,
+  GDB_BP_TYPE_R,
+  GDB_BP_TYPE_W,
+  GDB_BP_TYPE_A
+} gdb_bp_type;
 
-void Init(u32 port);
-void InitLocal(const char* socket);
-void Deinit();
-bool IsActive();
-bool HasControl();
-void TakeControl();
-bool JustConnected();
+void gdb_init(u32 port);
+void gdb_init_local(const char* socket);
+void gdb_deinit();
+bool gdb_active();
+void gdb_break();
 
-void ProcessCommands(bool loop_until_continue);
-void SendSignal(Signal signal);
-}  // namespace GDBStub
+void gdb_handle_exception();
+int gdb_signal(u32 signal);
+
+int gdb_bp_x(u32 addr);
+int gdb_bp_r(u32 addr);
+int gdb_bp_w(u32 addr);
+int gdb_bp_a(u32 addr);
+
+bool gdb_add_bp(u32 type, u32 addr, u32 len);

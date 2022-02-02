@@ -6,7 +6,6 @@
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 
-#include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -43,10 +42,10 @@ void Init()
   ExpansionInterface::Init();  // Needs to be initialized before Memory
   Memory::Init();              // Needs to be initialized before AddressSpace
   AddressSpace::Init();
-  DSP::Init(Config::Get(Config::MAIN_DSP_HLE));
+  DSP::Init(SConfig::GetInstance().bDSPHLE);
   DVDInterface::Init();
   GPFifo::Init();
-  CPU::Init(Config::Get(Config::MAIN_CPU_CORE));
+  CPU::Init(SConfig::GetInstance().cpu_core);
   SystemTimers::Init();
 
   if (SConfig::GetInstance().bWii)

@@ -8,7 +8,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-#include "Core/Config/MainSettings.h"
+#include "Core/ConfigManager.h"
 #include "Core/Core.h"
 
 #include "DolphinQt/Config/ControllerInterface/ControllerInterfaceWindow.h"
@@ -57,11 +57,11 @@ void CommonControllersWidget::OnControllerInterfaceConfigure()
 
 void CommonControllersWidget::LoadSettings()
 {
-  m_common_bg_input->setChecked(Config::Get(Config::MAIN_INPUT_BACKGROUND_INPUT));
+  m_common_bg_input->setChecked(SConfig::GetInstance().m_BackgroundInput);
 }
 
 void CommonControllersWidget::SaveSettings()
 {
-  Config::SetBaseOrCurrent(Config::MAIN_INPUT_BACKGROUND_INPUT, m_common_bg_input->isChecked());
-  Config::Save();
+  SConfig::GetInstance().m_BackgroundInput = m_common_bg_input->isChecked();
+  SConfig::GetInstance().SaveSettings();
 }

@@ -47,7 +47,6 @@ signals:
   void StateLoadUndo();
   void StateSaveUndo();
   void StartRecording();
-  void PlayRecording();
   void ExportRecording();
   void ToggleReadOnlyMode();
   void ConnectWiiRemote(int id);

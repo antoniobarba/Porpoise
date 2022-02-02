@@ -1,8 +1,6 @@
 // Copyright 2015 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Common/Logging/ConsoleListener.h"
-
 #include <cstdio>
 #include <cstring>
 
@@ -10,6 +8,7 @@
 #include <unistd.h>
 #endif
 
+#include "Common/Logging/ConsoleListener.h"
 #include "Common/Logging/Log.h"
 
 ConsoleListener::ConsoleListener()
@@ -22,7 +21,7 @@ ConsoleListener::~ConsoleListener()
   fflush(nullptr);
 }
 
-void ConsoleListener::Log(Common::Log::LogLevel level, const char* text)
+void ConsoleListener::Log(Common::Log::LOG_LEVELS level, const char* text)
 {
   char color_attr[16] = "";
   char reset_attr[16] = "";
@@ -32,15 +31,15 @@ void ConsoleListener::Log(Common::Log::LogLevel level, const char* text)
     strcpy(reset_attr, "\x1b[0m");
     switch (level)
     {
-    case Common::Log::LogLevel::LNOTICE:
+    case Common::Log::LOG_LEVELS::LNOTICE:
       // light green
       strcpy(color_attr, "\x1b[92m");
       break;
-    case Common::Log::LogLevel::LERROR:
+    case Common::Log::LOG_LEVELS::LERROR:
       // light red
       strcpy(color_attr, "\x1b[91m");
       break;
-    case Common::Log::LogLevel::LWARNING:
+    case Common::Log::LOG_LEVELS::LWARNING:
       // light yellow
       strcpy(color_attr, "\x1b[93m");
       break;

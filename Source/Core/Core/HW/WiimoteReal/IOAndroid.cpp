@@ -1,8 +1,6 @@
 // Copyright 2016 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/HW/WiimoteReal/IOAndroid.h"
-
 #include <jni.h>
 
 #include "Common/CommonTypes.h"
@@ -12,6 +10,8 @@
 #include "Common/StringUtil.h"
 #include "Common/Thread.h"
 #include "Common/Timer.h"
+
+#include "Core/HW/WiimoteReal/IOAndroid.h"
 
 #include "jni/AndroidCommon/IDCache.h"
 

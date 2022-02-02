@@ -175,16 +175,16 @@ void GeneralPane::CreateBasic()
 void GeneralPane::CreateAutoUpdate()
 {
   auto* auto_update_group = new QGroupBox(tr("Auto Update Settings"));
-  auto* auto_update_group_layout = new QFormLayout;
-  auto_update_group->setLayout(auto_update_group_layout);
+  auto* layout = new QFormLayout;
+  auto_update_group->setLayout(layout);
   m_main_layout->addWidget(auto_update_group);
 
-  auto_update_group_layout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
-  auto_update_group_layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+  layout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
+  layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 
   m_combobox_update_track = new QComboBox(this);
 
-  auto_update_group_layout->addRow(tr("&Auto Update:"), m_combobox_update_track);
+  layout->addRow(tr("&Auto Update:"), m_combobox_update_track);
 
   for (const QString& option : {tr("Don't Update"), tr("Stable (once a year)"),
                                 tr("Beta (once a month)"), tr("Dev (multiple times a day)")})
@@ -194,26 +194,28 @@ void GeneralPane::CreateAutoUpdate()
 void GeneralPane::CreateFallbackRegion()
 {
   auto* fallback_region_group = new QGroupBox(tr("Fallback Region"));
-  auto* fallback_region_group_layout = new QVBoxLayout;
-  fallback_region_group->setLayout(fallback_region_group_layout);
+  auto* layout = new QVBoxLayout;
+  fallback_region_group->setLayout(layout);
   m_main_layout->addWidget(fallback_region_group);
 
-  auto* fallback_region_dropdown_layout = new QFormLayout;
-  fallback_region_dropdown_layout->setFormAlignment(Qt::AlignLeft | Qt::AlignTop);
-  fallback_region_dropdown_layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
-  fallback_region_group_layout->addLayout(fallback_region_dropdown_layout);
-
   m_combobox_fallback_region = new QComboBox(this);
-  fallback_region_dropdown_layout->addRow(tr("Fallback Region:"), m_combobox_fallback_region);
 
-  for (const QString& option : {tr("NTSC-J"), tr("NTSC-U"), tr("PAL"), tr("NTSC-K")})
-    m_combobox_fallback_region->addItem(option);
+  auto* form_widget = new QWidget;
+  auto* form_layout = new QFormLayout;
+  form_widget->setLayout(form_layout);
+  form_layout->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+  form_layout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+  form_layout->addRow(tr("Fallback Region:"), m_combobox_fallback_region);
+  layout->addWidget(form_widget);
 
   auto* fallback_region_description =
       new QLabel(tr("Dolphin will use this for titles whose region cannot be determined "
                     "automatically."));
   fallback_region_description->setWordWrap(true);
-  fallback_region_group_layout->addWidget(fallback_region_description);
+  layout->addWidget(fallback_region_description);
+
+  for (const QString& option : {tr("NTSC-J"), tr("NTSC-U"), tr("PAL"), tr("NTSC-K")})
+    m_combobox_fallback_region->addItem(option);
 }
 
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
@@ -252,18 +254,17 @@ void GeneralPane::LoadConfig()
 #if defined(USE_ANALYTICS) && USE_ANALYTICS
   m_checkbox_enable_analytics->setChecked(Settings::Instance().IsAnalyticsEnabled());
 #endif
-  m_checkbox_dualcore->setChecked(Config::Get(Config::MAIN_CPU_THREAD));
+  m_checkbox_dualcore->setChecked(SConfig::GetInstance().bCPUThread);
   m_checkbox_cheats->setChecked(Settings::Instance().GetCheatsEnabled());
-  m_checkbox_override_region_settings->setChecked(
-      Config::Get(Config::MAIN_OVERRIDE_REGION_SETTINGS));
+  m_checkbox_override_region_settings->setChecked(SConfig::GetInstance().bOverrideRegionSettings);
   m_checkbox_auto_disc_change->setChecked(Config::Get(Config::MAIN_AUTO_DISC_CHANGE));
 #ifdef USE_DISCORD_PRESENCE
   m_checkbox_discord_presence->setChecked(Config::Get(Config::MAIN_USE_DISCORD_PRESENCE));
 #endif
-  int selection = qRound(Config::Get(Config::MAIN_EMULATION_SPEED) * 10);
+  int selection = qRound(SConfig::GetInstance().m_EmulationSpeed * 10);
   if (selection < m_combobox_speedlimit->count())
     m_combobox_speedlimit->setCurrentIndex(selection);
-  m_checkbox_dualcore->setChecked(Config::Get(Config::MAIN_CPU_THREAD));
+  m_checkbox_dualcore->setChecked(SConfig::GetInstance().bCPUThread);
 
   const auto fallback = Settings::Instance().GetFallbackRegion();
 
@@ -346,14 +347,15 @@ void GeneralPane::OnSaveConfig()
   Settings::Instance().SetAnalyticsEnabled(m_checkbox_enable_analytics->isChecked());
   DolphinAnalytics::Instance().ReloadConfig();
 #endif
+  settings.bCPUThread = m_checkbox_dualcore->isChecked();
   Config::SetBaseOrCurrent(Config::MAIN_CPU_THREAD, m_checkbox_dualcore->isChecked());
   Settings::Instance().SetCheatsEnabled(m_checkbox_cheats->isChecked());
+  settings.bOverrideRegionSettings = m_checkbox_override_region_settings->isChecked();
   Config::SetBaseOrCurrent(Config::MAIN_OVERRIDE_REGION_SETTINGS,
                            m_checkbox_override_region_settings->isChecked());
   Config::SetBase(Config::MAIN_AUTO_DISC_CHANGE, m_checkbox_auto_disc_change->isChecked());
   Config::SetBaseOrCurrent(Config::MAIN_ENABLE_CHEATS, m_checkbox_cheats->isChecked());
-  Config::SetBaseOrCurrent(Config::MAIN_EMULATION_SPEED,
-                           m_combobox_speedlimit->currentIndex() * 0.1f);
+  settings.m_EmulationSpeed = m_combobox_speedlimit->currentIndex() * 0.1f;
   Settings::Instance().SetFallbackRegion(
       UpdateFallbackRegionFromIndex(m_combobox_fallback_region->currentIndex()));
 

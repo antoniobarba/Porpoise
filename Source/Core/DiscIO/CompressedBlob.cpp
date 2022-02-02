@@ -1,7 +1,10 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "DiscIO/CompressedBlob.h"
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+#endif
 
 #include <algorithm>
 #include <cstdio>
@@ -13,11 +16,6 @@
 
 #include <zlib.h>
 
-#ifdef _WIN32
-#include <windows.h>
-#include <io.h>
-#endif
-
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
@@ -26,6 +24,7 @@
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "DiscIO/Blob.h"
+#include "DiscIO/CompressedBlob.h"
 #include "DiscIO/DiscScrubber.h"
 #include "DiscIO/MultithreadedCompressor.h"
 #include "DiscIO/Volume.h"
@@ -38,7 +37,7 @@ CompressedBlobReader::CompressedBlobReader(File::IOFile file, const std::string&
     : m_file(std::move(file)), m_file_name(filename)
 {
   m_file_size = m_file.GetSize();
-  m_file.Seek(0, File::SeekOrigin::Begin);
+  m_file.Seek(0, SEEK_SET);
   m_file.ReadArray(&m_header, 1);
 
   SetSectorSize(m_header.block_size);
@@ -104,12 +103,12 @@ bool CompressedBlobReader::GetBlock(u64 block_num, u8* out_ptr)
   // clear unused part of zlib buffer. maybe this can be deleted when it works fully.
   memset(&m_zlib_buffer[comp_block_size], 0, m_zlib_buffer.size() - comp_block_size);
 
-  m_file.Seek(offset, File::SeekOrigin::Begin);
+  m_file.Seek(offset, SEEK_SET);
   if (!m_file.ReadBytes(m_zlib_buffer.data(), comp_block_size))
   {
     ERROR_LOG_FMT(DISCIO, "The disc image \"{}\" is truncated, some of the data is missing.",
                   m_file_name);
-    m_file.ClearError();
+    m_file.Clear();
     return false;
   }
 
@@ -174,17 +173,17 @@ struct CompressThreadState
 
 struct CompressParameters
 {
-  std::vector<u8> data{};
-  u32 block_number = 0;
-  u64 inpos = 0;
+  std::vector<u8> data;
+  u32 block_number;
+  u64 inpos;
 };
 
 struct OutputParameters
 {
-  std::vector<u8> data{};
-  u32 block_number = 0;
-  bool compressed = false;
-  u64 inpos = 0;
+  std::vector<u8> data;
+  u32 block_number;
+  bool compressed;
+  u64 inpos;
 };
 
 static ConversionResultCode SetUpCompressThreadState(CompressThreadState* state)
@@ -301,9 +300,9 @@ bool ConvertToGCZ(BlobReader* infile, const std::string& infile_path,
   std::vector<u32> hashes(header.num_blocks);
 
   // seek past the header (we will write it at the end)
-  outfile.Seek(sizeof(CompressedBlobHeader), File::SeekOrigin::Current);
+  outfile.Seek(sizeof(CompressedBlobHeader), SEEK_CUR);
   // seek past the offset and hash tables (we will write them at the end)
-  outfile.Seek((sizeof(u64) + sizeof(u32)) * header.num_blocks, File::SeekOrigin::Current);
+  outfile.Seek((sizeof(u64) + sizeof(u32)) * header.num_blocks, SEEK_CUR);
 
   // Now we are ready to write compressed data!
   u64 inpos = 0;
@@ -361,7 +360,7 @@ bool ConvertToGCZ(BlobReader* infile, const std::string& infile_path,
   else
   {
     // Okay, go back and fill in headers
-    outfile.Seek(0, File::SeekOrigin::Begin);
+    outfile.Seek(0, SEEK_SET);
     outfile.WriteArray(&header, 1);
     outfile.WriteArray(offsets.data(), header.num_blocks);
     outfile.WriteArray(hashes.data(), header.num_blocks);
@@ -385,11 +384,11 @@ bool ConvertToGCZ(BlobReader* infile, const std::string& infile_path,
 bool IsGCZBlob(File::IOFile& file)
 {
   const u64 position = file.Tell();
-  if (!file.Seek(0, File::SeekOrigin::Begin))
+  if (!file.Seek(0, SEEK_SET))
     return false;
   CompressedBlobHeader header;
   bool is_gcz = file.ReadArray(&header, 1) && header.magic_cookie == GCZ_MAGIC;
-  file.Seek(position, File::SeekOrigin::Begin);
+  file.Seek(position, SEEK_SET);
   return is_gcz;
 }
 

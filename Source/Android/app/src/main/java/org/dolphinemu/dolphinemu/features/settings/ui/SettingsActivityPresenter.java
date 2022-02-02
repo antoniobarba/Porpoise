@@ -2,10 +2,9 @@
 
 package org.dolphinemu.dolphinemu.features.settings.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.text.TextUtils;
-
-import androidx.core.app.ComponentActivity;
 
 import org.dolphinemu.dolphinemu.R;
 import org.dolphinemu.dolphinemu.features.settings.model.Settings;
@@ -23,11 +22,13 @@ public final class SettingsActivityPresenter
 
   private boolean mShouldSave;
 
+  private AfterDirectoryInitializationRunner mAfterDirectoryInitializationRunner;
+
   private MenuTag mMenuTag;
   private String mGameId;
   private int mRevision;
   private boolean mIsWii;
-  private ComponentActivity mActivity;
+  private Context mContext;
 
   SettingsActivityPresenter(SettingsActivityView view, Settings settings)
   {
@@ -36,13 +37,13 @@ public final class SettingsActivityPresenter
   }
 
   public void onCreate(Bundle savedInstanceState, MenuTag menuTag, String gameId, int revision,
-          boolean isWii, ComponentActivity activity)
+          boolean isWii, Context context)
   {
     this.mMenuTag = menuTag;
     this.mGameId = gameId;
     this.mRevision = revision;
     this.mIsWii = isWii;
-    this.mActivity = activity;
+    this.mContext = context;
 
     mShouldSave = savedInstanceState != null && savedInstanceState.getBoolean(KEY_SHOULD_SAVE);
   }
@@ -94,9 +95,9 @@ public final class SettingsActivityPresenter
     {
       mView.showLoading();
 
-      new AfterDirectoryInitializationRunner()
-              .setFinishedCallback(mView::hideLoading)
-              .runWithLifecycle(mActivity, true, this::loadSettingsUI);
+      mAfterDirectoryInitializationRunner = new AfterDirectoryInitializationRunner();
+      mAfterDirectoryInitializationRunner.setFinishedCallback(mView::hideLoading);
+      mAfterDirectoryInitializationRunner.run(mContext, true, this::loadSettingsUI);
     }
   }
 
@@ -113,11 +114,28 @@ public final class SettingsActivityPresenter
 
   public void onStop(boolean finishing)
   {
+    if (mAfterDirectoryInitializationRunner != null)
+    {
+      mAfterDirectoryInitializationRunner.cancel();
+      mAfterDirectoryInitializationRunner = null;
+    }
+
     if (mSettings != null && finishing && mShouldSave)
     {
       Log.debug("[SettingsActivity] Settings activity stopping. Saving settings to INI...");
-      mSettings.saveSettings(mView, mActivity);
+      mSettings.saveSettings(mView, mContext);
     }
+  }
+
+  public boolean handleOptionsItem(int itemId)
+  {
+    if (itemId == R.id.menu_save_exit)
+    {
+      mView.finish();
+      return true;
+    }
+
+    return false;
   }
 
   public void onSettingChanged()
@@ -140,7 +158,7 @@ public final class SettingsActivityPresenter
     if (value != 0) // Not disabled
     {
       Bundle bundle = new Bundle();
-      bundle.putInt(SettingsFragmentPresenter.ARG_CONTROLLER_TYPE, value);
+      bundle.putInt(SettingsFragmentPresenter.ARG_CONTROLLER_TYPE, value / 6);
       mView.showSettingsFragment(key, bundle, true, mGameId);
     }
   }
@@ -154,7 +172,7 @@ public final class SettingsActivityPresenter
         break;
 
       case 2:
-        mView.showToastMessage(mActivity.getString(R.string.make_sure_continuous_scan_enabled));
+        mView.showToastMessage(mContext.getString(R.string.make_sure_continuous_scan_enabled));
         break;
     }
   }

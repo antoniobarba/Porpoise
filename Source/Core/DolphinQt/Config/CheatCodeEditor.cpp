@@ -32,10 +32,16 @@ void CheatCodeEditor::SetARCode(ActionReplay::ARCode* code)
 {
   m_name_edit->setText(QString::fromStdString(code->name));
 
-  m_code_edit->clear();
+  QString s;
 
   for (ActionReplay::AREntry& e : code->ops)
-    m_code_edit->append(QString::fromStdString(ActionReplay::SerializeLine(e)));
+  {
+    s += QStringLiteral("%1 %2\n")
+             .arg(e.cmd_addr, 8, 16, QLatin1Char('0'))
+             .arg(e.value, 8, 16, QLatin1Char('0'));
+  }
+
+  m_code_edit->setText(s);
 
   m_creator_label->setHidden(true);
   m_creator_edit->setHidden(true);
@@ -51,10 +57,14 @@ void CheatCodeEditor::SetGeckoCode(Gecko::GeckoCode* code)
   m_name_edit->setText(QString::fromStdString(code->name));
   m_creator_edit->setText(QString::fromStdString(code->creator));
 
-  m_code_edit->clear();
+  QString code_string;
 
   for (const auto& c : code->codes)
-    m_code_edit->append(QString::fromStdString(c.original_line));
+    code_string += QStringLiteral("%1 %2\n")
+                       .arg(c.address, 8, 16, QLatin1Char('0'))
+                       .arg(c.data, 8, 16, QLatin1Char('0'));
+
+  m_code_edit->setText(code_string);
 
   QString notes_string;
   for (const auto& line : code->notes)
@@ -125,6 +135,7 @@ bool CheatCodeEditor::AcceptAR()
 
     if (line.isEmpty())
       continue;
+
     if (i == 0 && line[0] == u'$')
     {
       if (name.isEmpty())
@@ -133,17 +144,40 @@ bool CheatCodeEditor::AcceptAR()
       continue;
     }
 
-    const auto parse_result = ActionReplay::DeserializeLine(line.toStdString());
+    QStringList values = line.split(QLatin1Char{' '});
 
-    if (std::holds_alternative<ActionReplay::AREntry>(parse_result))
+    bool good = true;
+
+    u32 addr = 0;
+    u32 value = 0;
+
+    if (values.size() == 2)
     {
-      entries.push_back(std::get<ActionReplay::AREntry>(parse_result));
-    }
-    else if (std::holds_alternative<ActionReplay::EncryptedLine>(parse_result))
-    {
-      encrypted_lines.emplace_back(std::get<ActionReplay::EncryptedLine>(parse_result));
+      addr = values[0].toUInt(&good, 16);
+
+      if (good)
+        value = values[1].toUInt(&good, 16);
+
+      if (good)
+        entries.push_back(ActionReplay::AREntry(addr, value));
     }
     else
+    {
+      QStringList blocks = line.split(QLatin1Char{'-'});
+
+      if (blocks.size() == 3 && blocks[0].size() == 4 && blocks[1].size() == 4 &&
+          blocks[2].size() == 5)
+      {
+        encrypted_lines.emplace_back(blocks[0].toStdString() + blocks[1].toStdString() +
+                                     blocks[2].toStdString());
+      }
+      else
+      {
+        good = false;
+      }
+    }
+
+    if (!good)
     {
       auto result = ModalMessageBox::warning(
           this, tr("Parsing Error"),
@@ -226,11 +260,20 @@ bool CheatCodeEditor::AcceptGecko()
       continue;
     }
 
-    if (std::optional<Gecko::GeckoCode::Code> c = Gecko::DeserializeLine(line.toStdString()))
-    {
-      entries.push_back(*c);
-    }
-    else
+    QStringList values = line.split(QLatin1Char{' '});
+
+    bool good = values.size() == 2;
+
+    u32 addr = 0;
+    u32 value = 0;
+
+    if (good)
+      addr = values[0].toUInt(&good, 16);
+
+    if (good)
+      value = values[1].toUInt(&good, 16);
+
+    if (!good)
     {
       auto result = ModalMessageBox::warning(
           this, tr("Parsing Error"),
@@ -242,6 +285,15 @@ bool CheatCodeEditor::AcceptGecko()
 
       if (result == QMessageBox::Abort)
         return false;
+    }
+    else
+    {
+      Gecko::GeckoCode::Code c;
+      c.address = addr;
+      c.data = value;
+      c.original_line = line.toStdString();
+
+      entries.push_back(c);
     }
   }
 

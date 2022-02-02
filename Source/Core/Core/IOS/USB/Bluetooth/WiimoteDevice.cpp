@@ -212,12 +212,13 @@ bool WiimoteDevice::IsConnected() const
 
 void WiimoteDevice::Activate(bool connect)
 {
+  const char* message = nullptr;
+
   if (connect && m_baseband_state == BasebandState::Inactive)
   {
     SetBasebandState(BasebandState::RequestConnection);
 
-    Core::DisplayMessage(fmt::format("Wii Remote {} connected", GetNumber() + 1),
-                         CONNECTION_MESSAGE_TIME);
+    message = "Wii Remote {} connected";
   }
   else if (!connect && IsConnected())
   {
@@ -227,9 +228,11 @@ void WiimoteDevice::Activate(bool connect)
     // Not doing that doesn't seem to break anything.
     m_host->RemoteDisconnect(GetBD());
 
-    Core::DisplayMessage(fmt::format("Wii Remote {} disconnected", GetNumber() + 1),
-                         CONNECTION_MESSAGE_TIME);
+    message = "Wii Remote {} disconnected";
   }
+
+  if (message)
+    Core::DisplayMessage(fmt::format(message, GetNumber() + 1), CONNECTION_MESSAGE_TIME);
 }
 
 bool WiimoteDevice::EventConnectionRequest()
@@ -607,7 +610,7 @@ void WiimoteDevice::ReceiveConfigurationReq(u8 ident, u8* data, u32 size)
     break;
 
     default:
-      DEBUG_ASSERT_MSG(IOS_WIIMOTE, 0, "Unknown Option: {:#04x}", options->type);
+      DEBUG_ASSERT_MSG(IOS_WIIMOTE, 0, "Unknown Option: 0x%02x", options->type);
       break;
     }
 
@@ -796,12 +799,16 @@ static int ParseAttribList(u8* attrib_id_list, u16& start_id, u16& end_id)
 
   const u8 sequence = attrib_list.Read8(attrib_offset);
   attrib_offset++;
-  [[maybe_unused]] const u8 seq_size = attrib_list.Read8(attrib_offset);
+  const u8 seq_size = attrib_list.Read8(attrib_offset);
   attrib_offset++;
   const u8 type_id = attrib_list.Read8(attrib_offset);
   attrib_offset++;
 
-  DEBUG_ASSERT(sequence == SDP_SEQ8);
+  if constexpr (MAX_LOGLEVEL >= Common::Log::LOG_LEVELS::LDEBUG)
+  {
+    DEBUG_ASSERT(sequence == SDP_SEQ8);
+    (void)seq_size;
+  }
 
   if (type_id == SDP_UINT32)
   {

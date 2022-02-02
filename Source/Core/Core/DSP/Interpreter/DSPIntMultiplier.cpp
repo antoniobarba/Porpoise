@@ -5,11 +5,10 @@
 
 // Multiplier and product register control
 
-#include "Core/DSP/Interpreter/DSPInterpreter.h"
-
 #include "Core/DSP/DSPTables.h"
 #include "Core/DSP/Interpreter/DSPIntCCUtil.h"
 #include "Core/DSP/Interpreter/DSPIntUtil.h"
+#include "Core/DSP/Interpreter/DSPInterpreter.h"
 
 namespace DSP::Interpreter
 {

@@ -6,23 +6,25 @@
 package org.dolphinemu.dolphinemu.utils;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 
 import androidx.annotation.NonNull;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.MutableLiveData;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.dolphinemu.dolphinemu.NativeLibrary;
 import org.dolphinemu.dolphinemu.activities.EmulationActivity;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A service that spawns its own thread in order to copy several binary and shader files
@@ -30,17 +32,20 @@ import java.io.OutputStream;
  */
 public final class DirectoryInitialization
 {
+  public static final String BROADCAST_ACTION =
+          "org.dolphinemu.dolphinemu.DIRECTORY_INITIALIZATION";
+
   public static final String EXTRA_STATE = "directoryState";
   private static final int WiimoteNewVersion = 5;  // Last changed in PR 8907
-  private static final MutableLiveData<DirectoryInitializationState> directoryState =
-          new MutableLiveData<>(DirectoryInitializationState.NOT_YET_INITIALIZED);
+  private static volatile DirectoryInitializationState directoryState =
+          DirectoryInitializationState.NOT_YET_INITIALIZED;
   private static volatile boolean areDirectoriesAvailable = false;
   private static String userPath;
+  private static AtomicBoolean isDolphinDirectoryInitializationRunning = new AtomicBoolean(false);
 
   public enum DirectoryInitializationState
   {
     NOT_YET_INITIALIZED,
-	INITIALIZING,
     DOLPHIN_DIRECTORIES_INITIALIZED,
     EXTERNAL_STORAGE_PERMISSION_NEEDED,
     CANT_FIND_EXTERNAL_STORAGE
@@ -48,10 +53,8 @@ public final class DirectoryInitialization
 
   public static void start(Context context)
   {
-    if (directoryState.getValue() == DirectoryInitializationState.INITIALIZING)
+    if (!isDolphinDirectoryInitializationRunning.compareAndSet(false, true))
       return;
-
-    directoryState.setValue(DirectoryInitializationState.INITIALIZING);
 
     // Can take a few seconds to run, so don't block UI thread.
     //noinspection TrivialFunctionalExpressionUsage
@@ -60,7 +63,7 @@ public final class DirectoryInitialization
 
   private static void init(Context context)
   {
-    if (directoryState.getValue() != DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED)
+    if (directoryState != DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED)
     {
       if (PermissionsHandler.hasWriteAccess(context))
       {
@@ -80,18 +83,21 @@ public final class DirectoryInitialization
             EmulationActivity.updateWiimoteNewIniPreferences(context);
           }
 
-          directoryState.postValue(DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED);
+          directoryState = DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED;
         }
         else
         {
-          directoryState.postValue(DirectoryInitializationState.CANT_FIND_EXTERNAL_STORAGE);
+          directoryState = DirectoryInitializationState.CANT_FIND_EXTERNAL_STORAGE;
         }
       }
       else
       {
-        directoryState.postValue(DirectoryInitializationState.EXTERNAL_STORAGE_PERMISSION_NEEDED);
+        directoryState = DirectoryInitializationState.EXTERNAL_STORAGE_PERMISSION_NEEDED;
       }
     }
+
+    isDolphinDirectoryInitializationRunning.set(false);
+    sendBroadcastState(directoryState, context);
   }
 
   private static boolean setDolphinUserDirectory(Context context)
@@ -200,19 +206,26 @@ public final class DirectoryInitialization
 
   public static boolean shouldStart(Context context)
   {
-    return getDolphinDirectoriesState().getValue() ==
-            DirectoryInitializationState.NOT_YET_INITIALIZED;
+    return !isDolphinDirectoryInitializationRunning.get() &&
+            getDolphinDirectoriesState(context) == DirectoryInitializationState.NOT_YET_INITIALIZED;
   }
 
   public static boolean areDolphinDirectoriesReady()
   {
-    return directoryState.getValue() ==
-            DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED;
+    return directoryState == DirectoryInitializationState.DOLPHIN_DIRECTORIES_INITIALIZED;
   }
 
- public static LiveData<DirectoryInitializationState> getDolphinDirectoriesState()
+  public static DirectoryInitializationState getDolphinDirectoriesState(Context context)
   {
-    return directoryState;
+    if (directoryState == DirectoryInitializationState.NOT_YET_INITIALIZED &&
+            !PermissionsHandler.hasWriteAccess(context))
+    {
+      return DirectoryInitializationState.EXTERNAL_STORAGE_PERMISSION_NEEDED;
+    }
+    else
+    {
+      return directoryState;
+    }
   }
 
   public static String getUserDirectory()
@@ -229,6 +242,14 @@ public final class DirectoryInitialization
   {
     return getUserDirectory() + File.separator + "GameSettings" + File.separator + gameId +
       ".ini";
+  }
+
+  private static void sendBroadcastState(DirectoryInitializationState state, Context context)
+  {
+    Intent localIntent =
+            new Intent(BROADCAST_ACTION)
+                    .putExtra(EXTRA_STATE, state);
+    LocalBroadcastManager.getInstance(context).sendBroadcast(localIntent);
   }
 
   private static boolean copyAsset(String asset, File output, Boolean overwrite, Context context)

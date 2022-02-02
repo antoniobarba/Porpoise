@@ -4,6 +4,7 @@
 #include "Core/PowerPC/Jit64/RegCache/JitRegCache.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -388,10 +389,9 @@ void RegCache::Discard(BitSet32 pregs)
 
   for (preg_t i : pregs)
   {
-    ASSERT_MSG(DYNA_REC, !m_regs[i].IsLocked(), "Someone forgot to unlock PPC reg {} (X64 reg {}).",
-               i, RX(i));
-    ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Register transaction is in progress for {}!",
-               i);
+    ASSERT_MSG(DYNA_REC, !m_regs[i].IsLocked(),
+               "Someone forgot to unlock PPC reg %zu (X64 reg %i).", i, RX(i));
+    ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Register transaction is in progress!");
 
     if (m_regs[i].IsBound())
     {
@@ -412,10 +412,9 @@ void RegCache::Flush(BitSet32 pregs)
 
   for (preg_t i : pregs)
   {
-    ASSERT_MSG(DYNA_REC, !m_regs[i].IsLocked(), "Someone forgot to unlock PPC reg {} (X64 reg {}).",
-               i, RX(i));
-    ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Register transaction is in progress for {}!",
-               i);
+    ASSERT_MSG(DYNA_REC, !m_regs[i].IsLocked(),
+               "Someone forgot to unlock PPC reg %zu (X64 reg %i).", i, RX(i));
+    ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Register transaction is in progress!");
 
     switch (m_regs[i].GetLocationType())
     {
@@ -440,7 +439,7 @@ void RegCache::Reset(BitSet32 pregs)
 {
   for (preg_t i : pregs)
   {
-    ASSERT_MSG(DYNA_REC, !m_regs[i].IsAway(),
+    ASSERT_MSG(DYNAREC, !m_regs[i].IsAway(),
                "Attempted to reset a loaded register (did you mean to flush it?)");
     m_regs[i].SetFlushed();
   }
@@ -497,7 +496,7 @@ BitSet32 RegCache::RegistersInUse() const
 
 void RegCache::FlushX(X64Reg reg)
 {
-  ASSERT_MSG(DYNA_REC, reg < m_xregs.size(), "Flushing non-existent reg {}", reg);
+  ASSERT_MSG(DYNA_REC, reg < m_xregs.size(), "Flushing non-existent reg %i", reg);
   ASSERT(!m_xregs[reg].IsLocked());
   if (!m_xregs[reg].IsFree())
   {
@@ -521,7 +520,7 @@ void RegCache::BindToRegister(preg_t i, bool doLoad, bool makeDirty)
   {
     X64Reg xr = GetFreeXReg();
 
-    ASSERT_MSG(DYNA_REC, !m_xregs[xr].IsDirty(), "Xreg {} already dirty", xr);
+    ASSERT_MSG(DYNA_REC, !m_xregs[xr].IsDirty(), "Xreg %i already dirty", xr);
     ASSERT_MSG(DYNA_REC, !m_xregs[xr].IsLocked(), "GetFreeXReg returned locked register");
     ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Invalid transaction state");
 
@@ -538,7 +537,7 @@ void RegCache::BindToRegister(preg_t i, bool doLoad, bool makeDirty)
                             [xr](const auto& r) {
                               return r.Location().has_value() && r.Location()->IsSimpleReg(xr);
                             }),
-               "Xreg {} already bound", xr);
+               "Xreg %i already bound", xr);
 
     m_regs[i].SetBoundTo(xr);
   }
@@ -550,14 +549,13 @@ void RegCache::BindToRegister(preg_t i, bool doLoad, bool makeDirty)
       m_xregs[RX(i)].MakeDirty();
   }
 
-  ASSERT_MSG(DYNA_REC, !m_xregs[RX(i)].IsLocked(),
-             "WTF, this reg ({} -> {}) should have been flushed", i, RX(i));
+  ASSERT_MSG(DYNA_REC, !m_xregs[RX(i)].IsLocked(), "WTF, this reg should have been flushed");
 }
 
 void RegCache::StoreFromRegister(preg_t i, FlushMode mode)
 {
   // When a transaction is in progress, allowing the store would overwrite the old value.
-  ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Register transaction on {} is in progress!", i);
+  ASSERT_MSG(DYNA_REC, !m_regs[i].IsRevertable(), "Register transaction is in progress!");
 
   bool doStore = false;
 
@@ -675,13 +673,13 @@ float RegCache::ScoreRegister(X64Reg xreg) const
 
 const OpArg& RegCache::R(preg_t preg) const
 {
-  ASSERT_MSG(DYNA_REC, !m_regs[preg].IsDiscarded(), "Discarded register - {}", preg);
+  ASSERT_MSG(DYNA_REC, !m_regs[preg].IsDiscarded(), "Discarded register - %zu", preg);
   return m_regs[preg].Location().value();
 }
 
 X64Reg RegCache::RX(preg_t preg) const
 {
-  ASSERT_MSG(DYNA_REC, m_regs[preg].IsBound(), "Unbound register - {}", preg);
+  ASSERT_MSG(DYNA_REC, m_regs[preg].IsBound(), "Unbound register - %zu", preg);
   return m_regs[preg].Location()->GetSimpleReg();
 }
 

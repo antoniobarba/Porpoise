@@ -23,25 +23,27 @@ using MathUtil::GRAVITY_ACCELERATION;
 struct PositionalState
 {
   // meters
-  Common::Vec3 position{};
+  Common::Vec3 position;
   // meters/second
-  Common::Vec3 velocity{};
+  Common::Vec3 velocity;
   // meters/second^2
-  Common::Vec3 acceleration{};
+  Common::Vec3 acceleration;
 };
 
 struct RotationalState
 {
   // radians
-  Common::Vec3 angle{};
+  Common::Vec3 angle;
   // radians/second
-  Common::Vec3 angular_velocity{};
+  Common::Vec3 angular_velocity;
 };
 
 struct IMUCursorState
 {
+  IMUCursorState();
+
   // Rotation of world around device.
-  Common::Quaternion rotation = Common::Quaternion::Identity();
+  Common::Quaternion rotation;
 
   float recentered_pitch = {};
 };
@@ -49,7 +51,6 @@ struct IMUCursorState
 // Contains both positional and rotational state.
 struct MotionState : PositionalState, RotationalState
 {
-  MotionState() = default;
 };
 
 // Note that 'gyroscope' is rotation of world around device.

@@ -1,20 +1,18 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoCommon/VideoConfig.h"
-
 #include <algorithm>
 
 #include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/StringUtil.h"
 #include "Core/Config/GraphicsSettings.h"
-#include "Core/Config/MainSettings.h"
+#include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/Movie.h"
-#include "VideoCommon/DriverDetails.h"
 #include "VideoCommon/OnScreenDisplay.h"
 #include "VideoCommon/VideoCommon.h"
+#include "VideoCommon/VideoConfig.h"
 
 VideoConfig g_Config;
 VideoConfig g_ActiveConfig;
@@ -24,7 +22,7 @@ static bool IsVSyncActive(bool enabled)
 {
   // Vsync is disabled when the throttler is disabled by the tab key.
   return enabled && !Core::GetIsThrottlerTempDisabled() &&
-         Config::Get(Config::MAIN_EMULATION_SPEED) == 1.0;
+         SConfig::GetInstance().m_EmulationSpeed == 1.0;
 }
 
 void UpdateActiveConfig()
@@ -33,6 +31,29 @@ void UpdateActiveConfig()
     Movie::SetGraphicsConfig();
   g_ActiveConfig = g_Config;
   g_ActiveConfig.bVSyncActive = IsVSyncActive(g_ActiveConfig.bVSync);
+}
+
+VideoConfig::VideoConfig()
+{
+  // Needed for the first frame, I think
+  fAspectRatioHackW = 1;
+  fAspectRatioHackH = 1;
+
+  // disable all features by default
+  backend_info.api_type = APIType::Nothing;
+  backend_info.MaxTextureSize = 16384;
+  backend_info.bSupportsExclusiveFullscreen = false;
+  backend_info.bSupportsMultithreading = false;
+  backend_info.bSupportsST3CTextures = false;
+  backend_info.bSupportsBPTCTextures = false;
+
+  bEnableValidationLayer = false;
+
+#if defined(ANDROID)
+  bBackendMultithreading = false;
+#else
+  bBackendMultithreading = true;
+#endif
 }
 
 void VideoConfig::Refresh()
@@ -112,7 +133,6 @@ void VideoConfig::Refresh()
   bForceTrueColor = Config::Get(Config::GFX_ENHANCE_FORCE_TRUE_COLOR);
   bDisableCopyFilter = Config::Get(Config::GFX_ENHANCE_DISABLE_COPY_FILTER);
   bArbitraryMipmapDetection = Config::Get(Config::GFX_ENHANCE_ARBITRARY_MIPMAP_DETECTION);
-  bSkipApproximateLogicOp = Config::Get(Config::GFX_ENHANCE_SKIP_APPROXIMATE_LOGIC_OP);
   fArbitraryMipmapDetectionThreshold =
       Config::Get(Config::GFX_ENHANCE_ARBITRARY_MIPMAP_DETECTION_THRESHOLD);
 
@@ -139,7 +159,6 @@ void VideoConfig::Refresh()
   bVertexRounding = Config::Get(Config::GFX_HACK_VERTEX_ROUDING);
   iEFBAccessTileSize = Config::Get(Config::GFX_HACK_EFB_ACCESS_TILE_SIZE);
   iMissingColorValue = Config::Get(Config::GFX_HACK_MISSING_COLOR_VALUE);
-  bFastTextureSampling = Config::Get(Config::GFX_HACK_FAST_TEXTURE_SAMPLING);
 
   bPerfQueriesEnable = Config::Get(Config::GFX_PERF_QUERIES_ENABLE);
 
@@ -180,14 +199,6 @@ static u32 GetNumAutoShaderCompilerThreads()
   return static_cast<u32>(std::min(std::max(cpu_info.num_cores - 3, 1), 4));
 }
 
-static u32 GetNumAutoShaderPreCompilerThreads()
-{
-  // Automatic number. We use clamp(cpus - 2, 1, infty) here.
-  // We chose this because we don't want to limit our speed-up
-  // and at the same time leave two logical cores for the dolphin UI and the rest of the OS.
-  return static_cast<u32>(std::max(cpu_info.num_cores - 2, 1));
-}
-
 u32 VideoConfig::GetShaderCompilerThreads() const
 {
   if (!backend_info.bSupportsBackgroundCompiling)
@@ -195,10 +206,8 @@ u32 VideoConfig::GetShaderCompilerThreads() const
 
   if (iShaderCompilerThreads >= 0)
     return static_cast<u32>(iShaderCompilerThreads);
-  else if (!DriverDetails::HasBug(DriverDetails::BUG_BROKEN_MULTITHREADED_SHADER_PRECOMPILATION))
-    return GetNumAutoShaderPreCompilerThreads();
   else
-    return 1;
+    return GetNumAutoShaderCompilerThreads();
 }
 
 u32 VideoConfig::GetShaderPrecompilerThreads() const

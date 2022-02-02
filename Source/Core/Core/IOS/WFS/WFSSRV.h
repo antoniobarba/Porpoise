@@ -84,10 +84,10 @@ private:
 
   struct FileDescriptor
   {
-    bool in_use = false;
+    bool in_use;
     std::string path;
-    int mode = 0;
-    size_t position = 0;
+    int mode;
+    size_t position;
     File::IOFile file;
 
     bool Open();

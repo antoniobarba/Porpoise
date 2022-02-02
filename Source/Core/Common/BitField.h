@@ -149,7 +149,6 @@ public:
 
   constexpr T Value() const { return Value(std::is_signed<T>()); }
   constexpr operator T() const { return Value(); }
-  static constexpr bool IsSigned() { return std::is_signed<T>(); }
   static constexpr std::size_t StartBit() { return position; }
   static constexpr std::size_t NumBits() { return bits; }
 
@@ -193,7 +192,7 @@ struct fmt::formatter<BitField<position, bits, T, S>>
   fmt::formatter<T> m_formatter;
   constexpr auto parse(format_parse_context& ctx) { return m_formatter.parse(ctx); }
   template <typename FormatContext>
-  auto format(const BitField<position, bits, T, S>& bitfield, FormatContext& ctx) const
+  auto format(const BitField<position, bits, T, S>& bitfield, FormatContext& ctx)
   {
     return m_formatter.format(bitfield.Value(), ctx);
   }
@@ -245,7 +244,6 @@ public:
   BitFieldArray& operator=(const BitFieldArray&) = delete;
 
 public:
-  constexpr bool IsSigned() const { return std::is_signed<T>(); }
   constexpr std::size_t StartBit() const { return position; }
   constexpr std::size_t NumBits() const { return bits; }
   constexpr std::size_t Size() const { return size; }
@@ -479,7 +477,7 @@ struct fmt::formatter<BitFieldArrayRef<position, bits, size, T, S>>
   fmt::formatter<T> m_formatter;
   constexpr auto parse(format_parse_context& ctx) { return m_formatter.parse(ctx); }
   template <typename FormatContext>
-  auto format(const BitFieldArrayRef<position, bits, size, T, S>& ref, FormatContext& ctx) const
+  auto format(const BitFieldArrayRef<position, bits, size, T, S>& ref, FormatContext& ctx)
   {
     return m_formatter.format(ref.Value(), ctx);
   }
@@ -491,8 +489,7 @@ struct fmt::formatter<BitFieldArrayConstRef<position, bits, size, T, S>>
   fmt::formatter<T> m_formatter;
   constexpr auto parse(format_parse_context& ctx) { return m_formatter.parse(ctx); }
   template <typename FormatContext>
-  auto format(const BitFieldArrayConstRef<position, bits, size, T, S>& ref,
-              FormatContext& ctx) const
+  auto format(const BitFieldArrayConstRef<position, bits, size, T, S>& ref, FormatContext& ctx)
   {
     return m_formatter.format(ref.Value(), ctx);
   }

@@ -540,8 +540,7 @@ std::optional<IPCReply> WFSIDevice::IOCtl(const IOCtlRequest& request)
     // TODO(wfs): Should be returning an error. However until we have
     // everything properly stubbed it's easier to simulate the methods
     // succeeding.
-    request.DumpUnknown(GetDeviceName(), Common::Log::LogType::IOS_WFS,
-                        Common::Log::LogLevel::LWARNING);
+    request.DumpUnknown(GetDeviceName(), Common::Log::IOS, Common::Log::LWARNING);
     Memory::Memset(request.buffer_out, 0, request.buffer_out_size);
     break;
   }

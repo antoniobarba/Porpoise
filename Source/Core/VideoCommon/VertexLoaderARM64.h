@@ -11,7 +11,6 @@ class DataReader;
 enum class VertexComponentFormat;
 enum class ComponentFormat;
 enum class ColorFormat;
-enum class CPArray : u8;
 
 class VertexLoaderARM64 : public VertexLoaderBase, public Arm64Gen::ARM64CodeBlock
 {
@@ -26,9 +25,8 @@ private:
   u32 m_dst_ofs = 0;
   Arm64Gen::FixupBranch m_skip_vertex;
   Arm64Gen::ARM64FloatEmitter m_float_emit;
-  void GetVertexAddr(CPArray array, VertexComponentFormat attribute, Arm64Gen::ARM64Reg reg);
-  s32 GetAddressImm(CPArray array, VertexComponentFormat attribute, Arm64Gen::ARM64Reg reg,
-                    u32 align);
+  void GetVertexAddr(int array, VertexComponentFormat attribute, Arm64Gen::ARM64Reg reg);
+  s32 GetAddressImm(int array, VertexComponentFormat attribute, Arm64Gen::ARM64Reg reg, u32 align);
   int ReadVertex(VertexComponentFormat attribute, ComponentFormat format, int count_in,
                  int count_out, bool dequantize, u8 scaling_exponent,
                  AttributeFormat* native_format, s32 offset = -1);

@@ -258,18 +258,10 @@ std::vector<std::string> DeviceContainer::GetAllDeviceStrings() const
   return device_strings;
 }
 
-bool DeviceContainer::HasDefaultDevice() const
-{
-  std::lock_guard lk(m_devices_mutex);
-  // Devices are already sorted by priority
-  return !m_devices.empty() && m_devices[0]->GetSortPriority() >= 0;
-}
-
 std::string DeviceContainer::GetDefaultDeviceString() const
 {
   std::lock_guard lk(m_devices_mutex);
-  // Devices are already sorted by priority
-  if (m_devices.empty() || m_devices[0]->GetSortPriority() < 0)
+  if (m_devices.empty())
     return "";
 
   DeviceQualifier device_qualifier;

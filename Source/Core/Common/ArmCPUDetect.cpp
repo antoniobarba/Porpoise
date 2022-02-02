@@ -1,8 +1,6 @@
 // Copyright 2013 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Common/CPUDetect.h"
-
 #include <cstring>
 #include <fstream>
 #include <sstream>
@@ -19,6 +17,7 @@
 
 #include <fmt/format.h>
 
+#include "Common/CPUDetect.h"
 #include "Common/CommonTypes.h"
 #include "Common/FileUtil.h"
 

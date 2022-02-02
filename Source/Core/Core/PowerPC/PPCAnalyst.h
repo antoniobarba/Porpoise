@@ -24,29 +24,29 @@ namespace PPCAnalyst
 struct CodeOp  // 16B
 {
   UGeckoInstruction inst;
-  GekkoOPInfo* opinfo = nullptr;
-  u32 address = 0;
-  u32 branchTo = 0;  // if UINT32_MAX, not a branch
+  GekkoOPInfo* opinfo;
+  u32 address;
+  u32 branchTo;  // if UINT32_MAX, not a branch
   BitSet32 regsOut;
   BitSet32 regsIn;
   BitSet32 fregsIn;
-  s8 fregOut = 0;
-  bool isBranchTarget = false;
-  bool branchUsesCtr = false;
-  bool branchIsIdleLoop = false;
-  bool wantsCR0 = false;
-  bool wantsCR1 = false;
-  bool wantsFPRF = false;
-  bool wantsCA = false;
-  bool wantsCAInFlags = false;
-  bool outputCR0 = false;
-  bool outputCR1 = false;
-  bool outputFPRF = false;
-  bool outputCA = false;
-  bool canEndBlock = false;
-  bool canCauseException = false;
-  bool skipLRStack = false;
-  bool skip = false;  // followed BL-s for example
+  s8 fregOut;
+  bool isBranchTarget;
+  bool branchUsesCtr;
+  bool branchIsIdleLoop;
+  bool wantsCR0;
+  bool wantsCR1;
+  bool wantsFPRF;
+  bool wantsCA;
+  bool wantsCAInFlags;
+  bool outputCR0;
+  bool outputCR1;
+  bool outputFPRF;
+  bool outputCA;
+  bool canEndBlock;
+  bool canCauseException;
+  bool skipLRStack;
+  bool skip;  // followed BL-s for example
   // which registers are still needed after this instruction in this block
   BitSet32 fprInUse;
   BitSet32 gprInUse;
@@ -138,24 +138,23 @@ using CodeBuffer = std::vector<CodeOp>;
 struct CodeBlock
 {
   // Beginning PPC address.
-  u32 m_address = 0;
+  u32 m_address;
 
   // Number of instructions
   // Gives us the size of the block.
-  u32 m_num_instructions = 0;
+  u32 m_num_instructions;
 
   // Some basic statistics about the block.
-  BlockStats* m_stats = nullptr;
+  BlockStats* m_stats;
 
   // Register statistics about the block.
-  BlockRegStats* m_gpa = nullptr;
-  BlockRegStats* m_fpa = nullptr;
+  BlockRegStats *m_gpa, *m_fpa;
 
   // Are we a broken block?
-  bool m_broken = false;
+  bool m_broken;
 
   // Did we have a memory_exception?
-  bool m_memory_exception = false;
+  bool m_memory_exception;
 
   // Which GQRs this block uses, if any.
   BitSet8 m_gqr_used;
@@ -215,11 +214,7 @@ public:
   void SetOption(AnalystOption option) { m_options |= option; }
   void ClearOption(AnalystOption option) { m_options &= ~(option); }
   bool HasOption(AnalystOption option) const { return !!(m_options & option); }
-  void SetDebuggingEnabled(bool enabled) { m_is_debugging_enabled = enabled; }
-  void SetBranchFollowingEnabled(bool enabled) { m_enable_branch_following = enabled; }
-  void SetFloatExceptionsEnabled(bool enabled) { m_enable_float_exceptions = enabled; }
-  void SetDivByZeroExceptionsEnabled(bool enabled) { m_enable_div_by_zero_exceptions = enabled; }
-  u32 Analyze(u32 address, CodeBlock* block, CodeBuffer* buffer, std::size_t block_size) const;
+  u32 Analyze(u32 address, CodeBlock* block, CodeBuffer* buffer, std::size_t block_size);
 
 private:
   enum class ReorderType
@@ -229,21 +224,13 @@ private:
     CROR
   };
 
-  bool CanSwapAdjacentOps(const CodeOp& a, const CodeOp& b) const;
-  void ReorderInstructionsCore(u32 instructions, CodeOp* code, bool reverse,
-                               ReorderType type) const;
-  void ReorderInstructions(u32 instructions, CodeOp* code) const;
-  void SetInstructionStats(CodeBlock* block, CodeOp* code, const GekkoOPInfo* opinfo,
-                           u32 index) const;
-  bool IsBusyWaitLoop(CodeBlock* block, CodeOp* code, size_t instructions) const;
+  void ReorderInstructionsCore(u32 instructions, CodeOp* code, bool reverse, ReorderType type);
+  void ReorderInstructions(u32 instructions, CodeOp* code);
+  void SetInstructionStats(CodeBlock* block, CodeOp* code, const GekkoOPInfo* opinfo, u32 index);
+  bool IsBusyWaitLoop(CodeBlock* block, CodeOp* code, size_t instructions);
 
   // Options
   u32 m_options = 0;
-
-  bool m_is_debugging_enabled = false;
-  bool m_enable_branch_following = false;
-  bool m_enable_float_exceptions = false;
-  bool m_enable_div_by_zero_exceptions = false;
 };
 
 void FindFunctions(u32 startAddr, u32 endAddr, PPCSymbolDB* func_db);

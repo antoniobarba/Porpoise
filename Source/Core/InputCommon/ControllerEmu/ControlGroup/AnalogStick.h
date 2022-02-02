@@ -23,8 +23,6 @@ public:
   StateData GetState() const;
 
 private:
-  Control* GetModifierInput() const override;
-
   std::unique_ptr<StickGate> m_stick_gate;
 };
 

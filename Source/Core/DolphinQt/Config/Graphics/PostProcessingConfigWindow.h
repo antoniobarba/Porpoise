@@ -52,7 +52,7 @@ private:
     u32 AddInteger(PostProcessingConfigWindow* parent, QGridLayout* grid, u32 row);
     u32 AddFloat(PostProcessingConfigWindow* parent, QGridLayout* grid, u32 row);
 
-    QCheckBox* m_checkbox = nullptr;
+    QCheckBox* m_checkbox;
     std::vector<QSlider*> m_sliders;
     std::vector<QLineEdit*> m_value_boxes;
 

@@ -1,8 +1,6 @@
 // Copyright 2010 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/HW/WiimoteReal/IOWin.h"
-
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
@@ -26,13 +24,13 @@
 #include "Common/CommonFuncs.h"
 #include "Common/CommonTypes.h"
 #include "Common/DynamicLibrary.h"
-#include "Common/HRWrap.h"
 #include "Common/Logging/Log.h"
 #include "Common/ScopeGuard.h"
 #include "Common/Thread.h"
 #include "Core/HW/WiimoteCommon/DataReport.h"
 #include "Core/HW/WiimoteCommon/WiimoteConstants.h"
 #include "Core/HW/WiimoteCommon/WiimoteReport.h"
+#include "Core/HW/WiimoteReal/IOWin.h"
 
 // Create func_t function pointer type and declare a nullptr-initialized static variable of that
 // type named "pfunc".
@@ -248,7 +246,7 @@ int IOWritePerSetOutputReport(HANDLE& dev_handle, const u8* buf, size_t len, DWO
       // Some third-party adapters (DolphinBar) use this
       // error code to signal the absence of a Wiimote
       // linked to the HID device.
-      WARN_LOG_FMT(WIIMOTE, "IOWrite[WWM_SET_OUTPUT_REPORT]: Error: {}", Common::HRWrap(err));
+      WARN_LOG_FMT(WIIMOTE, "IOWrite[WWM_SET_OUTPUT_REPORT]: Error: {:08x}", err);
     }
   }
 
@@ -298,8 +296,7 @@ int IOWritePerWriteFile(HANDLE& dev_handle, OVERLAPPED& hid_overlap_write,
       // Pending is no error!
       break;
     default:
-      WARN_LOG_FMT(WIIMOTE, "IOWrite[WWM_WRITE_FILE]: Error on WriteFile: {}",
-                   Common::HRWrap(error));
+      WARN_LOG_FMT(WIIMOTE, "IOWrite[WWM_WRITE_FILE]: Error on WriteFile: {:08x}", error);
       CancelIo(dev_handle);
       return 0;
     }
@@ -773,7 +770,7 @@ int IORead(HANDLE& dev_handle, OVERLAPPED& hid_overlap_read, u8* buf, int index)
     }
     else
     {
-      WARN_LOG_FMT(WIIMOTE, "ReadFile on Wiimote {}: {}", index + 1, Common::HRWrap(read_err));
+      WARN_LOG_FMT(WIIMOTE, "ReadFile error {} on Wiimote {}.", read_err, index + 1);
       return 0;
     }
   }
@@ -957,8 +954,8 @@ bool AttachWiimote(HANDLE hRadio, const BLUETOOTH_RADIO_INFO& radio_info,
 
     if (ERROR_SUCCESS != auth_result)
     {
-      ERROR_LOG_FMT(WIIMOTE, "AttachWiimote: BluetoothAuthenticateDeviceEx failed: {}",
-                    Common::HRWrap(auth_result));
+      ERROR_LOG_FMT(WIIMOTE, "AttachWiimote: BluetoothAuthenticateDeviceEx returned {:08x}",
+                    auth_result);
     }
 
     DWORD pcServices = 16;
@@ -969,8 +966,8 @@ bool AttachWiimote(HANDLE hRadio, const BLUETOOTH_RADIO_INFO& radio_info,
 
     if (ERROR_SUCCESS != srv_result)
     {
-      ERROR_LOG_FMT(WIIMOTE, "AttachWiimote: BluetoothEnumerateInstalledServices failed: {}",
-                    Common::HRWrap(auth_result));
+      ERROR_LOG_FMT(WIIMOTE, "AttachWiimote: BluetoothEnumerateInstalledServices returned {:08x}",
+                    srv_result);
     }
 #endif
     // Activate service
@@ -981,8 +978,7 @@ bool AttachWiimote(HANDLE hRadio, const BLUETOOTH_RADIO_INFO& radio_info,
 
     if (FAILED(hr))
     {
-      ERROR_LOG_FMT(WIIMOTE, "AttachWiimote: BluetoothSetServiceState failed: {}",
-                    Common::HRWrap(hr));
+      ERROR_LOG_FMT(WIIMOTE, "AttachWiimote: BluetoothSetServiceState returned {:08x}", hr);
     }
     else
     {

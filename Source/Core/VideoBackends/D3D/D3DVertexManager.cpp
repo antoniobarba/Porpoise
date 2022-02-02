@@ -34,8 +34,7 @@ static ComPtr<ID3D11Buffer> AllocateConstantBuffer(u32 size)
                                   D3D11_CPU_ACCESS_WRITE);
   ComPtr<ID3D11Buffer> cbuf;
   const HRESULT hr = D3D::device->CreateBuffer(&cbdesc, nullptr, &cbuf);
-  ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to create shader constant buffer (size={}): {}", cbsize,
-             DX11HRWrap(hr));
+  CHECK(SUCCEEDED(hr), "shader constant buffer (size=%u)", cbsize);
   if (FAILED(hr))
     return nullptr;
 
@@ -60,8 +59,8 @@ CreateTexelBufferView(ID3D11Buffer* buffer, TexelBufferFormat format, DXGI_FORMA
   CD3D11_SHADER_RESOURCE_VIEW_DESC srv_desc(buffer, srv_format, 0,
                                             VertexManager::TEXEL_STREAM_BUFFER_SIZE /
                                                 VertexManager::GetTexelBufferElementSize(format));
-  HRESULT hr = D3D::device->CreateShaderResourceView(buffer, &srv_desc, &srv);
-  ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to create SRV for texel buffer: {}", DX11HRWrap(hr));
+  CHECK(SUCCEEDED(D3D::device->CreateShaderResourceView(buffer, &srv_desc, &srv)),
+        "Create SRV for texel buffer");
   return srv;
 }
 
@@ -80,8 +79,8 @@ bool VertexManager::Initialize()
 
   for (int i = 0; i < BUFFER_COUNT; i++)
   {
-    HRESULT hr = D3D::device->CreateBuffer(&bufdesc, nullptr, &m_buffers[i]);
-    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to create buffer: {}", DX11HRWrap(hr));
+    CHECK(SUCCEEDED(D3D::device->CreateBuffer(&bufdesc, nullptr, &m_buffers[i])),
+          "Failed to create buffer.");
     if (m_buffers[i])
       D3DCommon::SetDebugObjectName(m_buffers[i].Get(), "Buffer of VertexManager");
   }
@@ -94,8 +93,8 @@ bool VertexManager::Initialize()
 
   CD3D11_BUFFER_DESC texel_buf_desc(TEXEL_STREAM_BUFFER_SIZE, D3D11_BIND_SHADER_RESOURCE,
                                     D3D11_USAGE_DYNAMIC, D3D11_CPU_ACCESS_WRITE);
-  HRESULT hr = D3D::device->CreateBuffer(&texel_buf_desc, nullptr, &m_texel_buffer);
-  ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Creating texel buffer failed: {}", DX11HRWrap(hr));
+  CHECK(SUCCEEDED(D3D::device->CreateBuffer(&texel_buf_desc, nullptr, &m_texel_buffer)),
+        "Creating texel buffer failed");
   if (!m_texel_buffer)
     return false;
 
@@ -133,7 +132,7 @@ bool VertexManager::MapTexelBuffer(u32 required_size, D3D11_MAPPED_SUBRESOURCE& 
   {
     // Restart buffer.
     HRESULT hr = D3D::context->Map(m_texel_buffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &sr);
-    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to map texel buffer: {}", DX11HRWrap(hr));
+    CHECK(SUCCEEDED(hr), "Map texel buffer");
     if (FAILED(hr))
       return false;
 
@@ -143,7 +142,7 @@ bool VertexManager::MapTexelBuffer(u32 required_size, D3D11_MAPPED_SUBRESOURCE& 
   {
     // Don't overwrite the earlier-used space.
     HRESULT hr = D3D::context->Map(m_texel_buffer.Get(), 0, D3D11_MAP_WRITE_NO_OVERWRITE, 0, &sr);
-    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to map texel buffer: {}", DX11HRWrap(hr));
+    CHECK(SUCCEEDED(hr), "Map texel buffer");
     if (FAILED(hr))
       return false;
   }

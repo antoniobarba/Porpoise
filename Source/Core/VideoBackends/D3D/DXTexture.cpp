@@ -1,8 +1,6 @@
 // Copyright 2017 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoBackends/D3D/DXTexture.h"
-
 #include <algorithm>
 #include <cstddef>
 
@@ -11,6 +9,7 @@
 #include "Common/Logging/Log.h"
 
 #include "VideoBackends/D3D/D3DState.h"
+#include "VideoBackends/D3D/DXTexture.h"
 #include "VideoBackends/D3DCommon/D3DCommon.h"
 #include "VideoCommon/VideoConfig.h"
 
@@ -51,8 +50,8 @@ std::unique_ptr<DXTexture> DXTexture::Create(const TextureConfig& config, std::s
   HRESULT hr = D3D::device->CreateTexture2D(&desc, nullptr, d3d_texture.GetAddressOf());
   if (FAILED(hr))
   {
-    PanicAlertFmt("Failed to create {}x{}x{} D3D backing texture: {}", config.width, config.height,
-                  config.layers, DX11HRWrap(hr));
+    PanicAlertFmt("Failed to create {}x{}x{} D3D backing texture", config.width, config.height,
+                  config.layers);
     return nullptr;
   }
 
@@ -98,8 +97,8 @@ bool DXTexture::CreateSRV()
   HRESULT hr = D3D::device->CreateShaderResourceView(m_texture.Get(), &desc, m_srv.GetAddressOf());
   if (FAILED(hr))
   {
-    PanicAlertFmt("Failed to create {}x{}x{} D3D SRV: {}", m_config.width, m_config.height,
-                  m_config.layers, DX11HRWrap(hr));
+    PanicAlertFmt("Failed to create {}x{}x{} D3D SRV", m_config.width, m_config.height,
+                  m_config.layers);
     return false;
   }
 
@@ -115,8 +114,8 @@ bool DXTexture::CreateUAV()
   HRESULT hr = D3D::device->CreateUnorderedAccessView(m_texture.Get(), &desc, m_uav.GetAddressOf());
   if (FAILED(hr))
   {
-    PanicAlertFmt("Failed to create {}x{}x{} D3D UAV: {}", m_config.width, m_config.height,
-                  m_config.layers, DX11HRWrap(hr));
+    PanicAlertFmt("Failed to create {}x{}x{} D3D UAV", m_config.width, m_config.height,
+                  m_config.layers);
     return false;
   }
 
@@ -207,7 +206,7 @@ std::unique_ptr<DXStagingTexture> DXStagingTexture::Create(StagingTextureType ty
 
   ComPtr<ID3D11Texture2D> texture;
   HRESULT hr = D3D::device->CreateTexture2D(&desc, nullptr, texture.GetAddressOf());
-  ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to create staging texture: {}", DX11HRWrap(hr));
+  CHECK(SUCCEEDED(hr), "Create staging texture");
   if (FAILED(hr))
     return nullptr;
 
@@ -298,7 +297,7 @@ bool DXStagingTexture::Map()
 
   D3D11_MAPPED_SUBRESOURCE sr;
   HRESULT hr = D3D::context->Map(m_tex.Get(), 0, map_type, 0, &sr);
-  ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to map readback texture: {}", DX11HRWrap(hr));
+  CHECK(SUCCEEDED(hr), "Map readback texture");
   if (FAILED(hr))
     return false;
 
@@ -363,8 +362,7 @@ std::unique_ptr<DXFramebuffer> DXFramebuffer::Create(DXTexture* color_attachment
         color_attachment->GetLayers());
     HRESULT hr = D3D::device->CreateRenderTargetView(color_attachment->GetD3DTexture(), &desc,
                                                      rtv.GetAddressOf());
-    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to create render target view for framebuffer: {}",
-               DX11HRWrap(hr));
+    CHECK(SUCCEEDED(hr), "Create render target view for framebuffer");
     if (FAILED(hr))
       return nullptr;
 
@@ -376,8 +374,7 @@ std::unique_ptr<DXFramebuffer> DXFramebuffer::Create(DXTexture* color_attachment
       desc.Format = integer_format;
       hr = D3D::device->CreateRenderTargetView(color_attachment->GetD3DTexture(), &desc,
                                                integer_rtv.GetAddressOf());
-      ASSERT_MSG(VIDEO, SUCCEEDED(hr),
-                 "Failed to create integer render target view for framebuffer: {}", DX11HRWrap(hr));
+      CHECK(SUCCEEDED(hr), "Create integer render target view for framebuffer");
     }
   }
 
@@ -391,8 +388,7 @@ std::unique_ptr<DXFramebuffer> DXFramebuffer::Create(DXTexture* color_attachment
         depth_attachment->GetLayers(), 0);
     HRESULT hr = D3D::device->CreateDepthStencilView(depth_attachment->GetD3DTexture(), &desc,
                                                      dsv.GetAddressOf());
-    ASSERT_MSG(VIDEO, SUCCEEDED(hr), "Failed to create depth stencil view for framebuffer: {}",
-               DX11HRWrap(hr));
+    CHECK(SUCCEEDED(hr), "Create depth stencil view for framebuffer");
     if (FAILED(hr))
       return nullptr;
   }

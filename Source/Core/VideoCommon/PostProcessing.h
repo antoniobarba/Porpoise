@@ -31,7 +31,7 @@ public:
       OPTION_INTEGER,
     };
 
-    bool m_bool_value = false;
+    bool m_bool_value;
 
     std::vector<float> m_float_values;
     std::vector<s32> m_integer_values;
@@ -45,12 +45,12 @@ public:
     std::vector<float> m_float_step_values;
     std::vector<s32> m_integer_step_values;
 
-    OptionType m_type = OptionType::OPTION_BOOL;
+    OptionType m_type;
 
     std::string m_gui_name;
     std::string m_option_name;
     std::string m_dependent_option;
-    bool m_dirty = false;
+    bool m_dirty;
   };
 
   using ConfigMap = std::map<std::string, ConfigurationOption>;

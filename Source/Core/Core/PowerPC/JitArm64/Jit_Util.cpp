@@ -1,14 +1,13 @@
 // Copyright 2015 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/PowerPC/JitArm64/Jit_Util.h"
-
 #include "Common/Arm64Emitter.h"
 #include "Common/Common.h"
 
 #include "Core/HW/MMIO.h"
 
 #include "Core/PowerPC/JitArm64/Jit.h"
+#include "Core/PowerPC/JitArm64/Jit_Util.h"
 
 using namespace Arm64Gen;
 
@@ -48,7 +47,7 @@ private:
       m_emit->STR(IndexType::Unsigned, reg, ARM64Reg::X0, 0);
       break;
     default:
-      ASSERT_MSG(DYNA_REC, false, "Unknown size {} passed to MMIOWriteCodeGenerator!", sbits);
+      ASSERT_MSG(DYNA_REC, false, "Unknown size %d passed to MMIOWriteCodeGenerator!", sbits);
       break;
     }
   }
@@ -141,7 +140,7 @@ private:
       m_emit->LDR(IndexType::Unsigned, m_dst_reg, ARM64Reg::X0, 0);
       break;
     default:
-      ASSERT_MSG(DYNA_REC, false, "Unknown size {} passed to MMIOReadCodeGenerator!", sbits);
+      ASSERT_MSG(DYNA_REC, false, "Unknown size %d passed to MMIOReadCodeGenerator!", sbits);
       break;
     }
   }
@@ -192,46 +191,19 @@ private:
   bool m_sign_extend;
 };
 
-void SwapPairs(ARM64XEmitter* emit, ARM64Reg dst_reg, ARM64Reg src_reg, u32 flags)
-{
-  if (flags & BackPatchInfo::FLAG_SIZE_32)
-    emit->ROR(dst_reg, src_reg, 32);
-  else if (flags & BackPatchInfo::FLAG_SIZE_16)
-    emit->ROR(dst_reg, src_reg, 16);
-  else
-    emit->REV16(dst_reg, src_reg);
-}
-
-void ByteswapAfterLoad(ARM64XEmitter* emit, ARM64FloatEmitter* float_emit, ARM64Reg dst_reg,
-                       ARM64Reg src_reg, u32 flags, bool is_reversed, bool is_extended)
+void ByteswapAfterLoad(ARM64XEmitter* emit, ARM64Reg dst_reg, ARM64Reg src_reg, u32 flags,
+                       bool is_reversed, bool is_extended)
 {
   if (is_reversed == !(flags & BackPatchInfo::FLAG_REVERSE))
   {
-    if (flags & BackPatchInfo::FLAG_SIZE_64)
+    if (flags & BackPatchInfo::FLAG_SIZE_32)
     {
-      if (flags & BackPatchInfo::FLAG_FLOAT)
-        float_emit->REV64(8, dst_reg, src_reg);
-      else
-        emit->REV64(dst_reg, src_reg);
-
-      src_reg = dst_reg;
-    }
-    else if (flags & BackPatchInfo::FLAG_SIZE_32)
-    {
-      if (flags & BackPatchInfo::FLAG_FLOAT)
-        float_emit->REV32(8, dst_reg, src_reg);
-      else
-        emit->REV32(dst_reg, src_reg);
-
+      emit->REV32(dst_reg, src_reg);
       src_reg = dst_reg;
     }
     else if (flags & BackPatchInfo::FLAG_SIZE_16)
     {
-      if (flags & BackPatchInfo::FLAG_FLOAT)
-        float_emit->REV16(8, dst_reg, src_reg);
-      else
-        emit->REV16(dst_reg, src_reg);
-
+      emit->REV16(dst_reg, src_reg);
       src_reg = dst_reg;
     }
   }
@@ -243,59 +215,34 @@ void ByteswapAfterLoad(ARM64XEmitter* emit, ARM64FloatEmitter* float_emit, ARM64
   }
 
   if (dst_reg != src_reg)
-  {
-    if (flags & BackPatchInfo::FLAG_FLOAT)
-      float_emit->ORR(dst_reg, src_reg, src_reg);
-    else
-      emit->MOV(dst_reg, src_reg);
-  }
+    emit->MOV(dst_reg, src_reg);
 }
 
-ARM64Reg ByteswapBeforeStore(ARM64XEmitter* emit, ARM64FloatEmitter* float_emit, ARM64Reg tmp_reg,
-                             ARM64Reg src_reg, u32 flags, bool want_reversed)
+ARM64Reg ByteswapBeforeStore(ARM64XEmitter* emit, ARM64Reg tmp_reg, ARM64Reg src_reg, u32 flags,
+                             bool want_reversed)
 {
   ARM64Reg dst_reg = src_reg;
 
   if (want_reversed == !(flags & BackPatchInfo::FLAG_REVERSE))
   {
-    if (flags & BackPatchInfo::FLAG_SIZE_64)
+    if (flags & BackPatchInfo::FLAG_SIZE_32)
     {
       dst_reg = tmp_reg;
-
-      if (flags & BackPatchInfo::FLAG_FLOAT)
-        float_emit->REV64(8, dst_reg, src_reg);
-      else
-        emit->REV64(dst_reg, src_reg);
-    }
-    else if (flags & BackPatchInfo::FLAG_SIZE_32)
-    {
-      dst_reg = tmp_reg;
-
-      if (flags & BackPatchInfo::FLAG_FLOAT)
-        float_emit->REV32(8, dst_reg, src_reg);
-      else
-        emit->REV32(dst_reg, src_reg);
+      emit->REV32(dst_reg, src_reg);
     }
     else if (flags & BackPatchInfo::FLAG_SIZE_16)
     {
       dst_reg = tmp_reg;
-
-      if (flags & BackPatchInfo::FLAG_FLOAT)
-        float_emit->REV16(8, dst_reg, src_reg);
-      else
-        emit->REV16(dst_reg, src_reg);
+      emit->REV16(dst_reg, src_reg);
     }
   }
 
   return dst_reg;
 }
 
-void MMIOLoadToReg(MMIO::Mapping* mmio, ARM64XEmitter* emit, ARM64FloatEmitter* float_emit,
-                   BitSet32 gprs_in_use, BitSet32 fprs_in_use, ARM64Reg dst_reg, u32 address,
-                   u32 flags)
+void MMIOLoadToReg(MMIO::Mapping* mmio, Arm64Gen::ARM64XEmitter* emit, BitSet32 gprs_in_use,
+                   BitSet32 fprs_in_use, ARM64Reg dst_reg, u32 address, u32 flags)
 {
-  ASSERT(!(flags & BackPatchInfo::FLAG_FLOAT));
-
   if (flags & BackPatchInfo::FLAG_SIZE_8)
   {
     MMIOReadCodeGenerator<u8> gen(emit, gprs_in_use, fprs_in_use, dst_reg, address,
@@ -315,16 +262,13 @@ void MMIOLoadToReg(MMIO::Mapping* mmio, ARM64XEmitter* emit, ARM64FloatEmitter* 
     mmio->GetHandlerForRead<u32>(address).Visit(gen);
   }
 
-  ByteswapAfterLoad(emit, float_emit, dst_reg, dst_reg, flags, false, true);
+  ByteswapAfterLoad(emit, dst_reg, dst_reg, flags, false, true);
 }
 
-void MMIOWriteRegToAddr(MMIO::Mapping* mmio, ARM64XEmitter* emit, ARM64FloatEmitter* float_emit,
-                        BitSet32 gprs_in_use, BitSet32 fprs_in_use, ARM64Reg src_reg, u32 address,
-                        u32 flags)
+void MMIOWriteRegToAddr(MMIO::Mapping* mmio, Arm64Gen::ARM64XEmitter* emit, BitSet32 gprs_in_use,
+                        BitSet32 fprs_in_use, ARM64Reg src_reg, u32 address, u32 flags)
 {
-  ASSERT(!(flags & BackPatchInfo::FLAG_FLOAT));
-
-  src_reg = ByteswapBeforeStore(emit, float_emit, ARM64Reg::W1, src_reg, flags, false);
+  src_reg = ByteswapBeforeStore(emit, ARM64Reg::W1, src_reg, flags, false);
 
   if (flags & BackPatchInfo::FLAG_SIZE_8)
   {

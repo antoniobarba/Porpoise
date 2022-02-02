@@ -1,8 +1,6 @@
 // Copyright 2013 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "InputCommon/ControllerInterface/OSX/OSX.h"
-
 #include <thread>
 
 #include <Cocoa/Cocoa.h>
@@ -14,6 +12,7 @@
 #include "Common/Thread.h"
 
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
+#include "InputCommon/ControllerInterface/OSX/OSX.h"
 #include "InputCommon/ControllerInterface/OSX/OSXJoystick.h"
 #include "InputCommon/ControllerInterface/OSX/RunLoopStopper.h"
 

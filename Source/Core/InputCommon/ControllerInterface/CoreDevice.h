@@ -136,7 +136,6 @@ public:
   // Use this to change the order in which devices are sorted in their list.
   // A higher priority means it will be one of the first ones (smaller index), making it more
   // likely to be index 0, which is automatically set as the default device when there isn't one.
-  // Every platform should have at least one device with priority >= 0.
   virtual int GetSortPriority() const { return 0; }
 
   const std::vector<Input*>& Inputs() const { return m_inputs; }
@@ -175,7 +174,7 @@ protected:
   void AddCombinedInput(std::string name, const std::pair<std::string, std::string>& inputs);
 
 private:
-  int m_id = 0;
+  int m_id;
   std::vector<Input*> m_inputs;
   std::vector<Output*> m_outputs;
 };
@@ -217,17 +216,16 @@ public:
   struct InputDetection
   {
     std::shared_ptr<Device> device;
-    Device::Input* input = nullptr;
+    Device::Input* input;
     Clock::time_point press_time;
     std::optional<Clock::time_point> release_time;
-    ControlState smoothness = 0;
+    ControlState smoothness;
   };
 
   Device::Input* FindInput(std::string_view name, const Device* def_dev) const;
   Device::Output* FindOutput(std::string_view name, const Device* def_dev) const;
 
   std::vector<std::string> GetAllDeviceStrings() const;
-  bool HasDefaultDevice() const;
   std::string GetDefaultDeviceString() const;
   std::shared_ptr<Device> FindDevice(const DeviceQualifier& devq) const;
 

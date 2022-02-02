@@ -132,6 +132,7 @@ void FrameUpdateOnCPUThread();
 void OnFrameEnd();
 
 void VideoThrottle();
+void RequestRefreshInfo();
 
 void UpdateTitle(u32 ElapseTime);
 

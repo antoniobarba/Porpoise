@@ -33,7 +33,6 @@
 #include "Core/HW/WII_IPC.h"
 #include "Core/PowerPC/JitCommon/JitBase.h"
 #include "Core/PowerPC/PowerPC.h"
-#include "Core/System.h"
 #include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/PixelEngine.h"
 
@@ -185,7 +184,7 @@ struct LogicalMemoryView
 };
 
 // Dolphin allocates memory to represent four regions:
-// - 32MB RAM (actually 24MB on hardware), available on GameCube and Wii
+// - 32MB RAM (actually 24MB on hardware), available on Gamecube and Wii
 // - 64MB "EXRAM", RAM only available on Wii
 // - 32MB FakeVMem, allocated in GameCube mode when MMU support is turned off.
 //   This is used to approximate the behavior of a common library which pages
@@ -261,7 +260,7 @@ void Init()
                            false};
 
   const bool wii = SConfig::GetInstance().bWii;
-  const bool mmu = Core::System::GetInstance().IsMMUMode();
+  const bool mmu = SConfig::GetInstance().bMMU;
 
   bool fake_vmem = false;
 #ifndef _ARCH_32
@@ -315,12 +314,7 @@ void Init()
 
 bool InitFastmemArena()
 {
-#if _ARCH_32
-  const size_t memory_size = 0x31000000;
-#else
-  const size_t memory_size = 0x400000000;
-#endif
-  physical_base = g_arena.ReserveMemoryRegion(memory_size);
+  physical_base = Common::MemArena::FindMemoryBase();
 
   if (!physical_base)
   {
@@ -334,7 +328,7 @@ bool InitFastmemArena()
       continue;
 
     u8* base = physical_base + region.physical_address;
-    u8* view = (u8*)g_arena.MapInMemoryRegion(region.shm_position, region.size, base);
+    u8* view = (u8*)g_arena.CreateView(region.shm_position, region.size, base);
 
     if (base != view)
     {
@@ -360,7 +354,7 @@ void UpdateLogicalMemory(const PowerPC::BatTable& dbat_table)
 
   for (auto& entry : logical_mapped_entries)
   {
-    g_arena.UnmapFromMemoryRegion(entry.mapped_pointer, entry.mapped_size);
+    g_arena.ReleaseView(entry.mapped_pointer, entry.mapped_size);
   }
   logical_mapped_entries.clear();
   for (u32 i = 0; i < dbat_table.size(); ++i)
@@ -387,7 +381,7 @@ void UpdateLogicalMemory(const PowerPC::BatTable& dbat_table)
           u8* base = logical_base + logical_address + intersection_start - translated_address;
           u32 mapped_size = intersection_end - intersection_start;
 
-          void* mapped_pointer = g_arena.MapInMemoryRegion(position, mapped_size, base);
+          void* mapped_pointer = g_arena.CreateView(position, mapped_size, base);
           if (!mapped_pointer)
           {
             PanicAlertFmt("Memory::UpdateLogicalMemory(): Failed to map memory region at 0x{:08X} "
@@ -445,16 +439,14 @@ void ShutdownFastmemArena()
       continue;
 
     u8* base = physical_base + region.physical_address;
-    g_arena.UnmapFromMemoryRegion(base, region.size);
+    g_arena.ReleaseView(base, region.size);
   }
 
   for (auto& entry : logical_mapped_entries)
   {
-    g_arena.UnmapFromMemoryRegion(entry.mapped_pointer, entry.mapped_size);
+    g_arena.ReleaseView(entry.mapped_pointer, entry.mapped_size);
   }
   logical_mapped_entries.clear();
-
-  g_arena.ReleaseMemoryRegion();
 
   physical_base = nullptr;
   logical_base = nullptr;
@@ -474,22 +466,16 @@ void Clear()
     memset(m_pEXRAM, 0, GetExRamSize());
 }
 
-u8* GetPointerForRange(u32 address, size_t size)
+static inline u8* GetPointerForRange(u32 address, size_t size)
 {
   // Make sure we don't have a range spanning 2 separate banks
   if (size >= GetExRamSizeReal())
-  {
-    PanicAlertFmt("Oversized range in GetPointerForRange. {:x} bytes at {:#010x}", size, address);
     return nullptr;
-  }
 
   // Check that the beginning and end of the range are valid
   u8* pointer = GetPointer(address);
   if (!pointer || !GetPointer(address + u32(size) - 1))
-  {
-    // A panic alert has already been raised by GetPointer
     return nullptr;
-  }
 
   return pointer;
 }
@@ -573,63 +559,55 @@ u8* GetPointer(u32 address)
 
 u8 Read_U8(u32 address)
 {
-  u8 value = 0;
-  CopyFromEmu(&value, address, sizeof(value));
-  return value;
+  return *GetPointer(address);
 }
 
 u16 Read_U16(u32 address)
 {
-  u16 value = 0;
-  CopyFromEmu(&value, address, sizeof(value));
-  return Common::swap16(value);
+  return Common::swap16(GetPointer(address));
 }
 
 u32 Read_U32(u32 address)
 {
-  u32 value = 0;
-  CopyFromEmu(&value, address, sizeof(value));
-  return Common::swap32(value);
+  return Common::swap32(GetPointer(address));
 }
 
 u64 Read_U64(u32 address)
 {
-  u64 value = 0;
-  CopyFromEmu(&value, address, sizeof(value));
-  return Common::swap64(value);
+  return Common::swap64(GetPointer(address));
 }
 
 void Write_U8(u8 value, u32 address)
 {
-  CopyToEmu(address, &value, sizeof(value));
+  *GetPointer(address) = value;
 }
 
 void Write_U16(u16 value, u32 address)
 {
   u16 swapped_value = Common::swap16(value);
-  CopyToEmu(address, &swapped_value, sizeof(swapped_value));
+  std::memcpy(GetPointer(address), &swapped_value, sizeof(u16));
 }
 
 void Write_U32(u32 value, u32 address)
 {
   u32 swapped_value = Common::swap32(value);
-  CopyToEmu(address, &swapped_value, sizeof(swapped_value));
+  std::memcpy(GetPointer(address), &swapped_value, sizeof(u32));
 }
 
 void Write_U64(u64 value, u32 address)
 {
   u64 swapped_value = Common::swap64(value);
-  CopyToEmu(address, &swapped_value, sizeof(swapped_value));
+  std::memcpy(GetPointer(address), &swapped_value, sizeof(u64));
 }
 
 void Write_U32_Swap(u32 value, u32 address)
 {
-  CopyToEmu(address, &value, sizeof(value));
+  std::memcpy(GetPointer(address), &value, sizeof(u32));
 }
 
 void Write_U64_Swap(u64 value, u32 address)
 {
-  CopyToEmu(address, &value, sizeof(value));
+  std::memcpy(GetPointer(address), &value, sizeof(u64));
 }
 
 }  // namespace Memory

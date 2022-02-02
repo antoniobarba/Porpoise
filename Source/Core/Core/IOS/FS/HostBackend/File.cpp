@@ -1,8 +1,6 @@
 // Copyright 2018 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/IOS/FS/HostBackend/FS.h"
-
 #include <algorithm>
 #include <memory>
 
@@ -10,6 +8,8 @@
 #include "Common/IOFile.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
+
+#include "Core/IOS/FS/HostBackend/FS.h"
 
 namespace IOS::HLE::FS
 {
@@ -80,7 +80,7 @@ Result<FileHandle> HostFileSystem::OpenFile(Uid, Gid, const std::string& path, M
   if (!handle)
     return ResultCode::NoFreeHandle;
 
-  const std::string host_path = BuildFilename(path).host_path;
+  const std::string host_path = BuildFilename(path);
   if (!File::IsFile(host_path))
   {
     *handle = Handle{};
@@ -127,7 +127,7 @@ Result<u32> HostFileSystem::ReadBytesFromFile(Fd fd, u8* ptr, u32 count)
     count = file_size - handle->file_offset;
 
   // File might be opened twice, need to seek before we read
-  handle->host_file->Seek(handle->file_offset, File::SeekOrigin::Begin);
+  handle->host_file->Seek(handle->file_offset, SEEK_SET);
   const u32 actually_read = static_cast<u32>(fread(ptr, 1, count, handle->host_file->GetHandle()));
 
   if (actually_read != count && ferror(handle->host_file->GetHandle()))
@@ -149,7 +149,7 @@ Result<u32> HostFileSystem::WriteBytesToFile(Fd fd, const u8* ptr, u32 count)
     return ResultCode::AccessDenied;
 
   // File might be opened twice, need to seek before we read
-  handle->host_file->Seek(handle->file_offset, File::SeekOrigin::Begin);
+  handle->host_file->Seek(handle->file_offset, SEEK_SET);
   if (!handle->host_file->WriteBytes(ptr, count))
     return ResultCode::AccessDenied;
 

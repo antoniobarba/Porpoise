@@ -10,6 +10,7 @@
 #include <QMouseEvent>
 #include <QScrollBar>
 
+#include <cctype>
 #include <cmath>
 
 #include "Common/StringUtil.h"

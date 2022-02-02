@@ -1,15 +1,14 @@
 // Copyright 2017 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "AudioCommon/CubebStream.h"
-
 #include <cubeb/cubeb.h>
 
+#include "AudioCommon/CubebStream.h"
 #include "AudioCommon/CubebUtils.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Common/Thread.h"
-#include "Core/Config/MainSettings.h"
+#include "Core/ConfigManager.h"
 
 // ~10 ms - needs to be at least 240 for surround
 constexpr u32 BUFFER_SAMPLES = 512;
@@ -37,7 +36,7 @@ bool CubebStream::Init()
   if (!m_ctx)
     return false;
 
-  m_stereo = !Config::ShouldUseDPL2Decoder();
+  m_stereo = !SConfig::GetInstance().ShouldUseDPL2Decoder();
 
   cubeb_stream_params params;
   params.rate = m_mixer->GetSampleRate();

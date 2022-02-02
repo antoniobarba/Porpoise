@@ -36,6 +36,7 @@ public:
   static constexpr size_t AES_KEY_SIZE = 16;
   static constexpr size_t SHA1_SIZE = 20;
 
+  static constexpr u32 H3_TABLE_SIZE = 0x18000;
   static constexpr u32 BLOCKS_PER_GROUP = 0x40;
 
   static constexpr u64 BLOCK_HEADER_SIZE = 0x0400;
@@ -122,7 +123,7 @@ private:
     Common::Lazy<std::vector<u8>> h3_table;
     Common::Lazy<std::unique_ptr<FileSystem>> file_system;
     Common::Lazy<u64> data_offset;
-    u32 type = 0;
+    u32 type;
   };
 
   std::unique_ptr<BlobReader> m_reader;
@@ -131,7 +132,7 @@ private:
   bool m_encrypted;
 
   mutable u64 m_last_decrypted_block;
-  mutable u8 m_last_decrypted_block_data[BLOCK_DATA_SIZE]{};
+  mutable u8 m_last_decrypted_block_data[BLOCK_DATA_SIZE];
 };
 
 }  // namespace DiscIO

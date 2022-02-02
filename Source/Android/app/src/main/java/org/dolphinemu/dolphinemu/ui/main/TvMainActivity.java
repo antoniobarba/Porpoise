@@ -29,7 +29,7 @@ import org.dolphinemu.dolphinemu.features.settings.ui.SettingsActivity;
 import org.dolphinemu.dolphinemu.model.AppTheme;
 import org.dolphinemu.dolphinemu.model.GameFile;
 import org.dolphinemu.dolphinemu.model.TvSettingsItem;
-import org.dolphinemu.dolphinemu.services.GameFileCacheManager;
+import org.dolphinemu.dolphinemu.services.GameFileCacheService;
 import org.dolphinemu.dolphinemu.ui.platform.Platform;
 import org.dolphinemu.dolphinemu.utils.DirectoryInitialization;
 import org.dolphinemu.dolphinemu.utils.FileBrowserHelper;
@@ -79,7 +79,7 @@ public final class TvMainActivity extends FragmentActivity
     if (DirectoryInitialization.shouldStart(this))
     {
       DirectoryInitialization.start(this);
-      GameFileCacheManager.startLoad(this);
+      GameFileCacheService.startLoad(this);
     }
 
     mPresenter.onResume();
@@ -126,7 +126,7 @@ public final class TvMainActivity extends FragmentActivity
 
     mSwipeRefresh.setOnRefreshListener(this);
 
-    setRefreshing(GameFileCacheManager.isLoadingOrRescanning());
+    setRefreshing(GameFileCacheService.isLoading());
 
     final FragmentManager fragmentManager = getSupportFragmentManager();
     mBrowseFragment = new BrowseSupportFragment();
@@ -154,8 +154,8 @@ public final class TvMainActivity extends FragmentActivity
                 TvGameViewHolder holder = (TvGameViewHolder) itemViewHolder;
 
                 // Start the emulation activity and send the path of the clicked ISO to it.
-                String[] paths = GameFileCacheManager.findSecondDiscAndGetPaths(holder.gameFile);
-                EmulationActivity.launch(TvMainActivity.this, paths, false);
+                String[] paths = GameFileCacheService.findSecondDiscAndGetPaths(holder.gameFile);
+                EmulationActivity.launch(TvMainActivity.this, paths);
               }
             });
   }
@@ -263,7 +263,7 @@ public final class TvMainActivity extends FragmentActivity
         case MainPresenter.REQUEST_GAME_FILE:
           FileBrowserHelper.runAfterExtensionCheck(this, uri,
                   FileBrowserHelper.GAME_LIKE_EXTENSIONS,
-                  () -> EmulationActivity.launch(this, result.getData().toString(), false));
+                  () -> EmulationActivity.launch(this, result.getData().toString()));
           break;
 
         case MainPresenter.REQUEST_WAD_FILE:
@@ -299,7 +299,7 @@ public final class TvMainActivity extends FragmentActivity
       if (grantResults[0] == PackageManager.PERMISSION_GRANTED)
       {
         DirectoryInitialization.start(this);
-        GameFileCacheManager.startLoad(this);
+        GameFileCacheService.startLoad(this);
       }
       else
       {
@@ -315,7 +315,7 @@ public final class TvMainActivity extends FragmentActivity
   public void onRefresh()
   {
     setRefreshing(true);
-    GameFileCacheManager.startRescan(this);
+    GameFileCacheService.startRescan(this);
   }
 
   private void buildRowsAdapter()
@@ -325,12 +325,12 @@ public final class TvMainActivity extends FragmentActivity
 
     if (PermissionsHandler.hasWriteAccess(this))
     {
-      GameFileCacheManager.startLoad(this);
+      GameFileCacheService.startLoad(this);
     }
 
     for (Platform platform : Platform.values())
     {
-      ListRow row = buildGamesRow(platform, GameFileCacheManager.getGameFilesForPlatform(platform));
+      ListRow row = buildGamesRow(platform, GameFileCacheService.getGameFilesForPlatform(platform));
 
       // Add row to the adapter only if it is not empty.
       if (row != null)
@@ -394,10 +394,6 @@ public final class TvMainActivity extends FragmentActivity
             R.drawable.ic_folder,
             R.string.grid_menu_install_wad));
 
-    rowItems.add(new TvSettingsItem(R.id.menu_load_wii_system_menu,
-            R.drawable.ic_folder,
-            R.string.grid_menu_load_wii_system_menu));
-
     rowItems.add(new TvSettingsItem(R.id.menu_import_wii_save,
             R.drawable.ic_folder,
             R.string.grid_menu_import_wii_save));
@@ -405,10 +401,6 @@ public final class TvMainActivity extends FragmentActivity
     rowItems.add(new TvSettingsItem(R.id.menu_import_nand_backup,
             R.drawable.ic_folder,
             R.string.grid_menu_import_nand_backup));
-
-    rowItems.add(new TvSettingsItem(R.id.menu_online_system_update,
-            R.drawable.ic_folder,
-            R.string.grid_menu_online_system_update));
 
     // Create a header for this row.
     HeaderItem header = new HeaderItem(R.string.settings, getString(R.string.settings));

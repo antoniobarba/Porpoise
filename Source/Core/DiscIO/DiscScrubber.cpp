@@ -132,16 +132,11 @@ bool DiscScrubber::ParseDisc()
     u64 h3_offset;
     // The H3 size is always 0x18000
 
-    if (!ReadFromVolume(partition.offset + WII_PARTITION_TMD_SIZE_ADDRESS, tmd_size,
-                        PARTITION_NONE) ||
-        !ReadFromVolume(partition.offset + WII_PARTITION_TMD_OFFSET_ADDRESS, tmd_offset,
-                        PARTITION_NONE) ||
-        !ReadFromVolume(partition.offset + WII_PARTITION_CERT_CHAIN_SIZE_ADDRESS, cert_chain_size,
-                        PARTITION_NONE) ||
-        !ReadFromVolume(partition.offset + WII_PARTITION_CERT_CHAIN_OFFSET_ADDRESS,
-                        cert_chain_offset, PARTITION_NONE) ||
-        !ReadFromVolume(partition.offset + WII_PARTITION_H3_OFFSET_ADDRESS, h3_offset,
-                        PARTITION_NONE))
+    if (!ReadFromVolume(partition.offset + 0x2a4, tmd_size, PARTITION_NONE) ||
+        !ReadFromVolume(partition.offset + 0x2a8, tmd_offset, PARTITION_NONE) ||
+        !ReadFromVolume(partition.offset + 0x2ac, cert_chain_size, PARTITION_NONE) ||
+        !ReadFromVolume(partition.offset + 0x2b0, cert_chain_offset, PARTITION_NONE) ||
+        !ReadFromVolume(partition.offset + 0x2b4, h3_offset, PARTITION_NONE))
     {
       return false;
     }
@@ -150,7 +145,7 @@ bool DiscScrubber::ParseDisc()
 
     MarkAsUsed(partition.offset + tmd_offset, tmd_size);
     MarkAsUsed(partition.offset + cert_chain_offset, cert_chain_size);
-    MarkAsUsed(partition.offset + h3_offset, WII_PARTITION_H3_SIZE);
+    MarkAsUsed(partition.offset + h3_offset, 0x18000);
 
     // Parse Data! This is where the big gain is
     if (!ParsePartitionData(partition))

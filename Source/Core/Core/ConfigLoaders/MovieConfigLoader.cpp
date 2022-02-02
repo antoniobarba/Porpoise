@@ -48,8 +48,6 @@ static void LoadFromDTM(Config::Layer* config_layer, Movie::DTMHeader* dtm)
   config_layer->Set(Config::GFX_HACK_SKIP_XFB_COPY_TO_RAM, dtm->bSkipXFBCopyToRam);
 
   config_layer->Set(Config::SESSION_USE_FMA, dtm->bUseFMA);
-
-  config_layer->Set(Config::MAIN_JIT_FOLLOW_BRANCH, dtm->bFollowBranch);
 }
 
 void SaveToDTM(Movie::DTMHeader* dtm)
@@ -75,8 +73,6 @@ void SaveToDTM(Movie::DTMHeader* dtm)
   dtm->bSkipXFBCopyToRam = Config::Get(Config::GFX_HACK_SKIP_XFB_COPY_TO_RAM);
 
   dtm->bUseFMA = Config::Get(Config::SESSION_USE_FMA);
-
-  dtm->bFollowBranch = Config::Get(Config::MAIN_JIT_FOLLOW_BRANCH);
 
   // Settings which only existed in old Dolphin versions
   dtm->bSkipIdle = true;

@@ -3,7 +3,6 @@
 
 #include "VideoCommon/FramebufferManager.h"
 
-#include <fmt/format.h>
 #include <memory>
 
 #include "Common/ChunkFile.h"
@@ -171,10 +170,9 @@ bool FramebufferManager::CreateEFBFramebuffer()
   const TextureConfig efb_depth_texture_config = GetEFBDepthTextureConfig();
 
   // We need a second texture to swap with for changing pixel formats
-  m_efb_color_texture = g_renderer->CreateTexture(efb_color_texture_config, "EFB color texture");
-  m_efb_depth_texture = g_renderer->CreateTexture(efb_depth_texture_config, "EFB depth texture");
-  m_efb_convert_color_texture =
-      g_renderer->CreateTexture(efb_color_texture_config, "EFB convert color texture");
+  m_efb_color_texture = g_renderer->CreateTexture(efb_color_texture_config);
+  m_efb_depth_texture = g_renderer->CreateTexture(efb_depth_texture_config);
+  m_efb_convert_color_texture = g_renderer->CreateTexture(efb_color_texture_config);
   if (!m_efb_color_texture || !m_efb_depth_texture || !m_efb_convert_color_texture)
     return false;
 
@@ -190,8 +188,7 @@ bool FramebufferManager::CreateEFBFramebuffer()
   {
     m_efb_resolve_color_texture = g_renderer->CreateTexture(
         TextureConfig(efb_color_texture_config.width, efb_color_texture_config.height, 1,
-                      efb_color_texture_config.layers, 1, efb_color_texture_config.format, 0),
-        "EFB color resolve texture");
+                      efb_color_texture_config.layers, 1, efb_color_texture_config.format, 0));
     if (!m_efb_resolve_color_texture)
       return false;
   }
@@ -202,8 +199,7 @@ bool FramebufferManager::CreateEFBFramebuffer()
     m_efb_depth_resolve_texture = g_renderer->CreateTexture(
         TextureConfig(efb_depth_texture_config.width, efb_depth_texture_config.height, 1,
                       efb_depth_texture_config.layers, 1, GetEFBDepthCopyFormat(),
-                      AbstractTextureFlag_RenderTarget),
-        "EFB depth resolve texture");
+                      AbstractTextureFlag_RenderTarget));
     if (!m_efb_depth_resolve_texture)
       return false;
 
@@ -315,11 +311,9 @@ bool FramebufferManager::CompileConversionPipelines()
 {
   for (u32 i = 0; i < NUM_EFB_REINTERPRET_TYPES; i++)
   {
-    EFBReinterpretType convtype = static_cast<EFBReinterpretType>(i);
     std::unique_ptr<AbstractShader> pixel_shader = g_renderer->CreateShaderFromSource(
-        ShaderStage::Pixel,
-        FramebufferShaderGen::GenerateFormatConversionShader(convtype, GetEFBSamples()),
-        fmt::format("Framebuffer conversion pixel shader {}", convtype));
+        ShaderStage::Pixel, FramebufferShaderGen::GenerateFormatConversionShader(
+                                static_cast<EFBReinterpretType>(i), GetEFBSamples()));
     if (!pixel_shader)
       return false;
 
@@ -478,8 +472,7 @@ bool FramebufferManager::CompileReadbackPipelines()
   if (IsEFBMultisampled())
   {
     auto depth_resolve_shader = g_renderer->CreateShaderFromSource(
-        ShaderStage::Pixel, FramebufferShaderGen::GenerateResolveDepthPixelShader(GetEFBSamples()),
-        "Depth resolve pixel shader");
+        ShaderStage::Pixel, FramebufferShaderGen::GenerateResolveDepthPixelShader(GetEFBSamples()));
     if (!depth_resolve_shader)
       return false;
 
@@ -491,8 +484,7 @@ bool FramebufferManager::CompileReadbackPipelines()
 
   // EFB restore pipeline
   auto restore_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Pixel, FramebufferShaderGen::GenerateEFBRestorePixelShader(),
-      "EFB restore pixel shader");
+      ShaderStage::Pixel, FramebufferShaderGen::GenerateEFBRestorePixelShader());
   if (!restore_shader)
     return false;
 
@@ -522,7 +514,7 @@ bool FramebufferManager::CreateReadbackFramebuffer()
     const TextureConfig color_config(IsUsingTiledEFBCache() ? m_efb_cache_tile_size : EFB_WIDTH,
                                      IsUsingTiledEFBCache() ? m_efb_cache_tile_size : EFB_HEIGHT, 1,
                                      1, 1, GetEFBColorFormat(), AbstractTextureFlag_RenderTarget);
-    m_efb_color_cache.texture = g_renderer->CreateTexture(color_config, "EFB color cache");
+    m_efb_color_cache.texture = g_renderer->CreateTexture(color_config);
     if (!m_efb_color_cache.texture)
       return false;
 
@@ -544,7 +536,7 @@ bool FramebufferManager::CreateReadbackFramebuffer()
                                      IsUsingTiledEFBCache() ? m_efb_cache_tile_size : EFB_HEIGHT, 1,
                                      1, 1, GetEFBDepthCopyFormat(),
                                      AbstractTextureFlag_RenderTarget);
-    m_efb_depth_cache.texture = g_renderer->CreateTexture(depth_config, "EFB depth cache");
+    m_efb_depth_cache.texture = g_renderer->CreateTexture(depth_config);
     if (!m_efb_depth_cache.texture)
       return false;
 
@@ -692,8 +684,7 @@ void FramebufferManager::ClearEFB(const MathUtil::Rectangle<int>& rc, bool clear
 bool FramebufferManager::CompileClearPipelines()
 {
   auto vertex_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Vertex, FramebufferShaderGen::GenerateClearVertexShader(),
-      "Clear vertex shader");
+      ShaderStage::Vertex, FramebufferShaderGen::GenerateClearVertexShader());
   if (!vertex_shader)
     return false;
 
@@ -846,12 +837,12 @@ bool FramebufferManager::CompilePokePipelines()
 {
   PortableVertexDeclaration vtx_decl = {};
   vtx_decl.position.enable = true;
-  vtx_decl.position.type = ComponentFormat::Float;
+  vtx_decl.position.type = VAR_FLOAT;
   vtx_decl.position.components = 4;
   vtx_decl.position.integer = false;
   vtx_decl.position.offset = offsetof(EFBPokeVertex, position);
   vtx_decl.colors[0].enable = true;
-  vtx_decl.colors[0].type = ComponentFormat::UByte;
+  vtx_decl.colors[0].type = VAR_UNSIGNED_BYTE;
   vtx_decl.colors[0].components = 4;
   vtx_decl.colors[0].integer = false;
   vtx_decl.colors[0].offset = offsetof(EFBPokeVertex, color);
@@ -862,8 +853,7 @@ bool FramebufferManager::CompilePokePipelines()
     return false;
 
   auto poke_vertex_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Vertex, FramebufferShaderGen::GenerateEFBPokeVertexShader(),
-      "EFB poke vertex shader");
+      ShaderStage::Vertex, FramebufferShaderGen::GenerateEFBPokeVertexShader());
   if (!poke_vertex_shader)
     return false;
 

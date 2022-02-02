@@ -3,7 +3,6 @@
 
 #include "InputCommon/ControllerInterface/DInput/DInput.h"
 
-#include "Common/HRWrap.h"
 #include "Common/Logging/Log.h"
 #include "Common/StringUtil.h"
 
@@ -38,15 +37,13 @@ std::string GetDeviceName(const LPDIRECTINPUTDEVICE8 device)
   str.diph.dwHow = DIPH_DEVICE;
 
   std::string result;
-  HRESULT hr = device->GetProperty(DIPROP_PRODUCTNAME, &str.diph);
-  if (SUCCEEDED(hr))
+  if (SUCCEEDED(device->GetProperty(DIPROP_PRODUCTNAME, &str.diph)))
   {
     result = StripSpaces(WStringToUTF8(str.wsz));
   }
   else
   {
-    ERROR_LOG_FMT(CONTROLLERINTERFACE, "GetProperty(DIPROP_PRODUCTNAME) failed: {}",
-                  Common::HRWrap(hr));
+    ERROR_LOG_FMT(CONTROLLERINTERFACE, "GetProperty(DIPROP_PRODUCTNAME) failed.");
   }
 
   return result;
@@ -55,15 +52,11 @@ std::string GetDeviceName(const LPDIRECTINPUTDEVICE8 device)
 // Assumes hwnd had not changed from the previous call
 void PopulateDevices(HWND hwnd)
 {
-  if (!s_idi8)
+  if (!s_idi8 && FAILED(DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION,
+                                           IID_IDirectInput8, (LPVOID*)&s_idi8, nullptr)))
   {
-    HRESULT hr = DirectInput8Create(GetModuleHandle(nullptr), DIRECTINPUT_VERSION,
-                                    IID_IDirectInput8, (LPVOID*)&s_idi8, nullptr);
-    if (FAILED(hr))
-    {
-      ERROR_LOG_FMT(CONTROLLERINTERFACE, "DirectInput8Create failed: {}", Common::HRWrap(hr));
-      return;
-    }
+    ERROR_LOG_FMT(CONTROLLERINTERFACE, "DirectInput8Create failed.");
+    return;
   }
 
   // Remove old (invalid) devices. No need to ever remove the KeyboardMouse device.

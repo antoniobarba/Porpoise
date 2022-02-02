@@ -12,8 +12,6 @@
 #include <QDialog>
 
 #include "Common/CommonTypes.h"
-#include "Common/EnumMap.h"
-#include "Core/HW/EXI/EXI.h"
 
 namespace Memcard
 {
@@ -55,26 +53,26 @@ private:
   void LoadDefaultMemcards();
 
   void UpdateActions();
-  void UpdateSlotTable(ExpansionInterface::Slot slot);
-  void SetSlotFile(ExpansionInterface::Slot slot, QString path);
-  void SetSlotFileInteractive(ExpansionInterface::Slot slot);
-  void SetActiveSlot(ExpansionInterface::Slot slot);
+  void UpdateSlotTable(int slot);
+  void SetSlotFile(int slot, QString path);
+  void SetSlotFileInteractive(int slot);
+  void SetActiveSlot(int slot);
 
   std::vector<u8> GetSelectedFileIndices();
 
-  void ImportFiles(ExpansionInterface::Slot slot, const std::vector<Memcard::Savefile>& savefiles);
+  void ImportFiles(int slot, const std::vector<Memcard::Savefile>& savefiles);
 
   void CopyFiles();
   void ImportFile();
   void DeleteFiles();
   void ExportFiles(Memcard::SavefileFormat format);
   void FixChecksums();
-  void CreateNewCard(ExpansionInterface::Slot slot);
+  void CreateNewCard(int slot);
   void DrawIcons();
 
-  QPixmap GetBannerFromSaveFile(int file_index, ExpansionInterface::Slot slot);
+  QPixmap GetBannerFromSaveFile(int file_index, int slot);
 
-  IconAnimationData GetIconFromSaveFile(int file_index, ExpansionInterface::Slot slot);
+  IconAnimationData GetIconFromSaveFile(int file_index, int slot);
 
   // Actions
   QPushButton* m_select_button;
@@ -89,18 +87,17 @@ private:
   QPushButton* m_fix_checksums_button;
 
   // Slots
-  Common::EnumMap<std::map<u8, IconAnimationData>, ExpansionInterface::MAX_MEMCARD_SLOT>
-      m_slot_active_icons;
-  Common::EnumMap<std::unique_ptr<Memcard::GCMemcard>, ExpansionInterface::MAX_MEMCARD_SLOT>
-      m_slot_memcard;
-  Common::EnumMap<QGroupBox*, ExpansionInterface::MAX_MEMCARD_SLOT> m_slot_group;
-  Common::EnumMap<QLineEdit*, ExpansionInterface::MAX_MEMCARD_SLOT> m_slot_file_edit;
-  Common::EnumMap<QPushButton*, ExpansionInterface::MAX_MEMCARD_SLOT> m_slot_open_button;
-  Common::EnumMap<QPushButton*, ExpansionInterface::MAX_MEMCARD_SLOT> m_slot_create_button;
-  Common::EnumMap<QTableWidget*, ExpansionInterface::MAX_MEMCARD_SLOT> m_slot_table;
-  Common::EnumMap<QLabel*, ExpansionInterface::MAX_MEMCARD_SLOT> m_slot_stat_label;
+  static constexpr int SLOT_COUNT = 2;
+  std::array<std::map<u8, IconAnimationData>, SLOT_COUNT> m_slot_active_icons;
+  std::array<std::unique_ptr<Memcard::GCMemcard>, SLOT_COUNT> m_slot_memcard;
+  std::array<QGroupBox*, SLOT_COUNT> m_slot_group;
+  std::array<QLineEdit*, SLOT_COUNT> m_slot_file_edit;
+  std::array<QPushButton*, SLOT_COUNT> m_slot_open_button;
+  std::array<QPushButton*, SLOT_COUNT> m_slot_create_button;
+  std::array<QTableWidget*, SLOT_COUNT> m_slot_table;
+  std::array<QLabel*, SLOT_COUNT> m_slot_stat_label;
 
-  ExpansionInterface::Slot m_active_slot;
+  int m_active_slot;
   u64 m_current_frame = 0;
 
   QDialogButtonBox* m_button_box;

@@ -8,21 +8,18 @@
 #include <string>
 #include <vector>
 
-#include "Common/Assert.h"
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
 #include "Common/IOFile.h"
 #include "Common/Logging/Log.h"
 #include "Common/StringUtil.h"
-#include "Core/Config/MainSettings.h"
-#include "Core/HW/EXI/EXI.h"
+#include "Core/ConfigManager.h"
 
 namespace ExpansionInterface
 {
-CEXIAgp::CEXIAgp(Slot slot)
+CEXIAgp::CEXIAgp(int index)
 {
-  ASSERT(IsMemcardSlot(slot));
-  m_slot = slot;
+  m_slot = index;
 
   // Create the ROM
   m_rom_size = 0;
@@ -38,7 +35,9 @@ CEXIAgp::~CEXIAgp()
   std::string filename;
   std::string ext;
   std::string gbapath;
-  SplitPath(Config::Get(Config::GetInfoForAGPCartPath(m_slot)), &path, &filename, &ext);
+  SplitPath(m_slot == 0 ? SConfig::GetInstance().m_strGbaCartA :
+                          SConfig::GetInstance().m_strGbaCartB,
+            &path, &filename, &ext);
   gbapath = path + filename;
 
   SaveFileFromEEPROM(gbapath + ".sav");
@@ -76,7 +75,9 @@ void CEXIAgp::LoadRom()
   std::string path;
   std::string filename;
   std::string ext;
-  SplitPath(Config::Get(Config::GetInfoForAGPCartPath(m_slot)), &path, &filename, &ext);
+  SplitPath(m_slot == 0 ? SConfig::GetInstance().m_strGbaCartA :
+                          SConfig::GetInstance().m_strGbaCartB,
+            &path, &filename, &ext);
   const std::string gbapath = path + filename;
   LoadFileToROM(gbapath + ext);
   INFO_LOG_FMT(EXPANSIONINTERFACE, "Loaded GBA rom: {} card: {}", gbapath, m_slot);

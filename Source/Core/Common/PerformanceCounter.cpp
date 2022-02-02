@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #if !defined(_WIN32)
-#include "Common/PerformanceCounter.h"
 
 #include <cstdint>
 #include <ctime>
@@ -10,6 +9,7 @@
 #include <unistd.h>
 
 #include "Common/CommonTypes.h"
+#include "Common/PerformanceCounter.h"
 
 #if defined(_POSIX_TIMERS) && _POSIX_TIMERS > 0
 #if defined(_POSIX_MONOTONIC_CLOCK) && _POSIX_MONOTONIC_CLOCK > 0

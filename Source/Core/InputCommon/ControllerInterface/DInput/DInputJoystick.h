@@ -64,14 +64,13 @@ public:
 
   std::string GetName() const override;
   std::string GetSource() const override;
-  int GetSortPriority() const override { return -2; }
 
   bool IsValid() const final override;
 
 private:
   const LPDIRECTINPUTDEVICE8 m_device;
 
-  DIJOYSTATE m_state_in{};
+  DIJOYSTATE m_state_in;
 
   bool m_buffered;
 };

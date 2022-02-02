@@ -1,8 +1,6 @@
 // Copyright 2017 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoBackends/Vulkan/VKTexture.h"
-
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
@@ -19,6 +17,7 @@
 #include "VideoBackends/Vulkan/StateTracker.h"
 #include "VideoBackends/Vulkan/VKRenderer.h"
 #include "VideoBackends/Vulkan/VKStreamBuffer.h"
+#include "VideoBackends/Vulkan/VKTexture.h"
 #include "VideoBackends/Vulkan/VulkanContext.h"
 
 #include "VideoCommon/VideoConfig.h"
@@ -31,7 +30,11 @@ VKTexture::VKTexture(const TextureConfig& tex_config, VkDeviceMemory device_memo
     : AbstractTexture(tex_config), m_device_memory(device_memory), m_image(image), m_layout(layout),
       m_compute_layout(compute_layout), m_name(name)
 {
+<<<<<<< HEAD
   if (!m_name.empty() && g_ActiveConfig.backend_info.bSupportsSettingObjectNames)
+=======
+  if (!m_name.empty())
+>>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
   {
     VkDebugUtilsObjectNameInfoEXT name_info = {};
     name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;

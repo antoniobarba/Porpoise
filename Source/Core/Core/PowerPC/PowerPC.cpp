@@ -18,7 +18,6 @@
 #include "Common/FloatUtils.h"
 #include "Common/Logging/Log.h"
 
-#include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
@@ -26,7 +25,6 @@
 #include "Core/HW/SystemTimers.h"
 #include "Core/Host.h"
 #include "Core/PowerPC/CPUCoreBase.h"
-#include "Core/PowerPC/GDBStub.h"
 #include "Core/PowerPC/Interpreter/Interpreter.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/MMU.h"
@@ -220,8 +218,7 @@ static void InitializeCPUCore(CPUCore cpu_core)
     s_cpu_core_base = JitInterface::InitJitCore(cpu_core);
     if (!s_cpu_core_base)  // Handle Situations where JIT core isn't available
     {
-      WARN_LOG_FMT(POWERPC, "CPU core {} not available. Falling back to default.",
-                   static_cast<int>(cpu_core));
+      WARN_LOG_FMT(POWERPC, "CPU core {} not available. Falling back to default.", cpu_core);
       s_cpu_core_base = JitInterface::InitJitCore(DefaultCPUCore());
     }
     break;
@@ -266,7 +263,7 @@ void Init(CPUCore cpu_core)
   InitializeCPUCore(cpu_core);
   ppcState.iCache.Init();
 
-  if (Config::Get(Config::MAIN_ENABLE_DEBUGGING))
+  if (SConfig::GetInstance().bEnableDebugging)
     breakpoints.ClearAllTemporary();
 }
 
@@ -486,8 +483,8 @@ void CheckExceptions()
   else if (exceptions & EXCEPTION_PROGRAM)
   {
     SRR0 = PC;
-    // SRR1 was partially set by GenerateProgramException, so bitwise or is used here
-    SRR1 |= MSR.Hex & 0x87C0FFFF;
+    // say that it's a trap exception
+    SRR1 = (MSR.Hex & 0x87C0FFFF) | 0x20000;
     MSR.LE = MSR.ILE;
     MSR.Hex &= ~0x04EF36;
     PC = NPC = 0x00000700;
@@ -601,7 +598,7 @@ void CheckExternalExceptions()
     }
     else
     {
-      DEBUG_ASSERT_MSG(POWERPC, 0, "Unknown EXT interrupt: Exceptions == {:08x}", exceptions);
+      DEBUG_ASSERT_MSG(POWERPC, 0, "Unknown EXT interrupt: Exceptions == %08x", exceptions);
       ERROR_LOG_FMT(POWERPC, "Unknown EXTERNAL INTERRUPT exception: Exceptions == {:08x}",
                     exceptions);
     }
@@ -614,11 +611,7 @@ void CheckBreakPoints()
     return;
 
   if (PowerPC::breakpoints.IsBreakPointBreakOnHit(PC))
-  {
     CPU::Break();
-    if (GDBStub::IsActive())
-      GDBStub::TakeControl();
-  }
   if (PowerPC::breakpoints.IsBreakPointLogOnHit(PC))
   {
     NOTICE_LOG_FMT(MEMMAP,

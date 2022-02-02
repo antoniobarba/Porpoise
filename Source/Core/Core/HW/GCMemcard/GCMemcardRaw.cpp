@@ -26,7 +26,6 @@
 #include "Core/Config/SessionSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
-#include "Core/HW/EXI/EXI.h"
 #include "Core/HW/EXI/EXI_DeviceIPL.h"
 #include "Core/HW/GCMemcard/GCMemcard.h"
 #include "Core/HW/Sram.h"
@@ -34,9 +33,8 @@
 #define SIZE_TO_Mb (1024 * 8 * 16)
 #define MC_HDR_SIZE 0xA000
 
-MemoryCard::MemoryCard(const std::string& filename, ExpansionInterface::Slot card_slot,
-                       u16 size_mbits)
-    : MemoryCardBase(card_slot, size_mbits), m_filename(filename)
+MemoryCard::MemoryCard(const std::string& filename, int card_index, u16 size_mbits)
+    : MemoryCardBase(card_index, size_mbits), m_filename(filename)
 {
   File::IOFile file(m_filename, "rb");
   if (file)
@@ -90,15 +88,13 @@ MemoryCard::~MemoryCard()
   }
 }
 
-void MemoryCard::CheckPath(std::string& memcardPath, const std::string& gameRegion,
-                           ExpansionInterface::Slot card_slot)
+void MemoryCard::CheckPath(std::string& memcardPath, const std::string& gameRegion, bool isSlotA)
 {
-  bool is_slot_a = card_slot == ExpansionInterface::Slot::A;
   std::string ext("." + gameRegion + ".raw");
   if (memcardPath.empty())
   {
     // Use default memcard path if there is no user defined name
-    std::string defaultFilename = is_slot_a ? GC_MEMCARDA : GC_MEMCARDB;
+    std::string defaultFilename = isSlotA ? GC_MEMCARDA : GC_MEMCARDB;
     memcardPath = File::GetUserPath(D_GCUSER_IDX) + defaultFilename + ext;
   }
   else
@@ -122,7 +118,7 @@ void MemoryCard::CheckPath(std::string& memcardPath, const std::string& gameRegi
                            "Slot {1} path was changed to\n"
                            "{2}\n"
                            "Would you like to copy the old file to this new location?\n",
-                           is_slot_a ? 'A' : 'B', is_slot_a ? 'A' : 'B', filename))
+                           isSlotA ? 'A' : 'B', isSlotA ? 'A' : 'B', filename))
         {
           if (!File::Copy(oldFilename, filename))
             PanicAlertFmtT("Copy failed");
@@ -146,7 +142,7 @@ void MemoryCard::FlushThread()
     return;
   }
 
-  Common::SetCurrentThreadName(fmt::format("Memcard {} flushing thread", m_card_slot).c_str());
+  Common::SetCurrentThreadName(fmt::format("Memcard {} flushing thread", m_card_index).c_str());
 
   const auto flush_interval = std::chrono::seconds(15);
 
@@ -203,10 +199,9 @@ void MemoryCard::FlushThread()
     if (do_exit)
       return;
 
-    Core::DisplayMessage(fmt::format("Wrote memory card {} contents to {}",
-                                     m_card_slot == ExpansionInterface::Slot::A ? 'A' : 'B',
-                                     m_filename),
-                         4000);
+    Core::DisplayMessage(
+        fmt::format("Wrote memory card {} contents to {}", m_card_index ? 'B' : 'A', m_filename),
+        4000);
   }
 }
 
@@ -270,7 +265,7 @@ void MemoryCard::ClearAll()
 
 void MemoryCard::DoState(PointerWrap& p)
 {
-  p.Do(m_card_slot);
+  p.Do(m_card_index);
   p.Do(m_memory_card_size);
   p.DoArray(&m_memcard_data[0], m_memory_card_size);
 }

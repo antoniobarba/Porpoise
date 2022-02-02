@@ -1,11 +1,8 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoCommon/CommandProcessor.h"
-
 #include <atomic>
 #include <cstring>
-#include <fmt/format.h>
 
 #include "Common/Assert.h"
 #include "Common/ChunkFile.h"
@@ -17,7 +14,7 @@
 #include "Core/HW/GPFifo.h"
 #include "Core/HW/MMIO.h"
 #include "Core/HW/ProcessorInterface.h"
-#include "Core/System.h"
+#include "VideoCommon/CommandProcessor.h"
 #include "VideoCommon/Fifo.h"
 
 namespace CommandProcessor
@@ -41,42 +38,14 @@ static u16 m_tokenReg;
 static Common::Flag s_interrupt_set;
 static Common::Flag s_interrupt_waiting;
 
-static bool s_is_fifo_error_seen = false;
-
 static bool IsOnThread()
 {
-  return Core::System::GetInstance().IsDualCoreMode();
+  return SConfig::GetInstance().bCPUThread;
 }
 
 static void UpdateInterrupts_Wrapper(u64 userdata, s64 cyclesLate)
 {
   UpdateInterrupts(userdata);
-}
-
-void SCPFifoStruct::Init()
-{
-  CPBase = 0;
-  CPEnd = 0;
-  CPHiWatermark = 0;
-  CPLoWatermark = 0;
-  CPReadWriteDistance = 0;
-  CPWritePointer = 0;
-  CPReadPointer = 0;
-  CPBreakpoint = 0;
-  SafeCPReadPointer = 0;
-
-  bFF_GPLinkEnable = 0;
-  bFF_GPReadEnable = 0;
-  bFF_BPEnable = 0;
-  bFF_BPInt = 0;
-
-  bFF_Breakpoint.store(0, std::memory_order_relaxed);
-  bFF_HiWatermark.store(0, std::memory_order_relaxed);
-  bFF_HiWatermarkInt.store(0, std::memory_order_relaxed);
-  bFF_LoWatermark.store(0, std::memory_order_relaxed);
-  bFF_LoWatermarkInt.store(0, std::memory_order_relaxed);
-
-  s_is_fifo_error_seen = false;
 }
 
 void SCPFifoStruct::DoState(PointerWrap& p)
@@ -148,7 +117,12 @@ void Init()
 
   m_tokenReg = 0;
 
-  fifo.Init();
+  memset(&fifo, 0, sizeof(fifo));
+  fifo.bFF_Breakpoint.store(0, std::memory_order_relaxed);
+  fifo.bFF_HiWatermark.store(0, std::memory_order_relaxed);
+  fifo.bFF_HiWatermarkInt.store(0, std::memory_order_relaxed);
+  fifo.bFF_LoWatermark.store(0, std::memory_order_relaxed);
+  fifo.bFF_LoWatermarkInt.store(0, std::memory_order_relaxed);
 
   s_interrupt_set.Clear();
   s_interrupt_waiting.Clear();
@@ -613,28 +587,20 @@ void SetCpClearRegister()
 {
 }
 
-void HandleUnknownOpcode(u8 cmd_byte, const u8* buffer, bool preprocess)
+void HandleUnknownOpcode(u8 cmd_byte, void* buffer, bool preprocess)
 {
-  // Datel software uses 0x01 during startup, and Mario Party 5's Wiggler capsule
-  // accidentally uses 0x01-0x03 due to sending 4 more vertices than intended.
-  // Hardware testing indicates that 0x01-0x07 do nothing, so to avoid annoying the user with
-  // spurious popups, we don't create a panic alert in those cases.  Other unknown opcodes
-  // (such as 0x18) seem to result in hangs.
-  if (!s_is_fifo_error_seen && cmd_byte > 0x07)
+  // TODO(Omega): Maybe dump FIFO to file on this error
+  PanicAlertFmtT("GFX FIFO: Unknown Opcode ({0:#04x} @ {1}, {2}).\n"
+                 "This means one of the following:\n"
+                 "* The emulated GPU got desynced, disabling dual core can help\n"
+                 "* Command stream corrupted by some spurious memory bug\n"
+                 "* This really is an unknown opcode (unlikely)\n"
+                 "* Some other sort of bug\n\n"
+                 "Further errors will be sent to the Video Backend log and\n"
+                 "Dolphin will now likely crash or hang. Enjoy.",
+                 cmd_byte, buffer, preprocess ? "preprocess=true" : "preprocess=false");
+
   {
-    s_is_fifo_error_seen = true;
-
-    // TODO(Omega): Maybe dump FIFO to file on this error
-    PanicAlertFmtT("GFX FIFO: Unknown Opcode ({0:#04x} @ {1}, preprocess={2}).\n"
-                   "This means one of the following:\n"
-                   "* The emulated GPU got desynced, disabling dual core can help\n"
-                   "* Command stream corrupted by some spurious memory bug\n"
-                   "* This really is an unknown opcode (unlikely)\n"
-                   "* Some other sort of bug\n\n"
-                   "Further errors will be sent to the Video Backend log and\n"
-                   "Dolphin will now likely crash or hang. Enjoy.",
-                   cmd_byte, fmt::ptr(buffer), preprocess);
-
     PanicAlertFmt("Illegal command {:02x}\n"
                   "CPBase: {:#010x}\n"
                   "CPEnd: {:#010x}\n"
@@ -665,10 +631,6 @@ void HandleUnknownOpcode(u8 cmd_byte, const u8* buffer, bool preprocess)
                   fifo.bFF_HiWatermarkInt.load(std::memory_order_relaxed) ? "true" : "false",
                   fifo.bFF_LoWatermarkInt.load(std::memory_order_relaxed) ? "true" : "false");
   }
-
-  // We always generate this log message, though we only generate the panic alerts once.
-  ERROR_LOG_FMT(VIDEO, "FIFO: Unknown Opcode ({:#04x} @ {}, preprocessing = {})", cmd_byte,
-                fmt::ptr(buffer), preprocess ? "yes" : "no");
 }
 
 }  // namespace CommandProcessor

@@ -1,13 +1,12 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/PowerPC/Interpreter/Interpreter.h"
-
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 #include "Core/ConfigManager.h"
 #include "Core/HLE/HLE.h"
 #include "Core/PowerPC/Interpreter/ExceptionUtils.h"
+#include "Core/PowerPC/Interpreter/Interpreter.h"
 #include "Core/PowerPC/PowerPC.h"
 
 void Interpreter::bx(UGeckoInstruction inst)
@@ -102,7 +101,7 @@ void Interpreter::rfi(UGeckoInstruction inst)
 {
   if (MSR.PR)
   {
-    GenerateProgramException(ProgramExceptionCause::PrivilegedInstruction);
+    GenerateProgramException();
     return;
   }
 

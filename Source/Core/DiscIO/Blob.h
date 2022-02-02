@@ -39,7 +39,6 @@ enum class BlobType
   TGC,
   WIA,
   RVZ,
-  MOD_DESCRIPTOR,
 };
 
 std::string GetName(BlobType blob_type, bool translate);

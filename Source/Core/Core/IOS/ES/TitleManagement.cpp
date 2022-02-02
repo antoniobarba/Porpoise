@@ -4,6 +4,7 @@
 #include "Core/IOS/ES/ES.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstddef>
 #include <utility>
 #include <vector>

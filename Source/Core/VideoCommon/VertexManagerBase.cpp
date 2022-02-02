@@ -10,7 +10,6 @@
 #include "Common/BitSet.h"
 #include "Common/ChunkFile.h"
 #include "Common/CommonTypes.h"
-#include "Common/EnumMap.h"
 #include "Common/Logging/Log.h"
 #include "Common/MathUtil.h"
 
@@ -28,6 +27,7 @@
 #include "VideoCommon/PerfQueryBase.h"
 #include "VideoCommon/PixelShaderManager.h"
 #include "VideoCommon/RenderBase.h"
+#include "VideoCommon/SamplerCommon.h"
 #include "VideoCommon/Statistics.h"
 #include "VideoCommon/TextureCacheBase.h"
 #include "VideoCommon/VertexLoaderManager.h"
@@ -39,10 +39,8 @@
 
 std::unique_ptr<VertexManagerBase> g_vertex_manager;
 
-using OpcodeDecoder::Primitive;
-
 // GX primitive -> RenderState primitive, no primitive restart
-constexpr Common::EnumMap<PrimitiveType, Primitive::GX_DRAW_POINTS> primitive_from_gx{
+constexpr std::array<PrimitiveType, 8> primitive_from_gx{{
     PrimitiveType::Triangles,  // GX_DRAW_QUADS
     PrimitiveType::Triangles,  // GX_DRAW_QUADS_2
     PrimitiveType::Triangles,  // GX_DRAW_TRIANGLES
@@ -51,10 +49,10 @@ constexpr Common::EnumMap<PrimitiveType, Primitive::GX_DRAW_POINTS> primitive_fr
     PrimitiveType::Lines,      // GX_DRAW_LINES
     PrimitiveType::Lines,      // GX_DRAW_LINE_STRIP
     PrimitiveType::Points,     // GX_DRAW_POINTS
-};
+}};
 
 // GX primitive -> RenderState primitive, using primitive restart
-constexpr Common::EnumMap<PrimitiveType, Primitive::GX_DRAW_POINTS> primitive_from_gx_pr{
+constexpr std::array<PrimitiveType, 8> primitive_from_gx_pr{{
     PrimitiveType::TriangleStrip,  // GX_DRAW_QUADS
     PrimitiveType::TriangleStrip,  // GX_DRAW_QUADS_2
     PrimitiveType::TriangleStrip,  // GX_DRAW_TRIANGLES
@@ -63,7 +61,7 @@ constexpr Common::EnumMap<PrimitiveType, Primitive::GX_DRAW_POINTS> primitive_fr
     PrimitiveType::Lines,          // GX_DRAW_LINES
     PrimitiveType::Lines,          // GX_DRAW_LINE_STRIP
     PrimitiveType::Points,         // GX_DRAW_POINTS
-};
+}};
 
 // Due to the BT.601 standard which the GameCube is based on being a compromise
 // between PAL and NTSC, neither standard gets square pixels. They are each off
@@ -110,13 +108,13 @@ u32 VertexManagerBase::GetRemainingSize() const
   return static_cast<u32>(m_end_buffer_pointer - m_cur_buffer_pointer);
 }
 
-void VertexManagerBase::AddIndices(OpcodeDecoder::Primitive primitive, u32 num_vertices)
+void VertexManagerBase::AddIndices(int primitive, u32 num_vertices)
 {
   m_index_generator.AddIndices(primitive, num_vertices);
 }
 
-DataReader VertexManagerBase::PrepareForAdditionalData(OpcodeDecoder::Primitive primitive,
-                                                       u32 count, u32 stride, bool cullall)
+DataReader VertexManagerBase::PrepareForAdditionalData(int primitive, u32 count, u32 stride,
+                                                       bool cullall)
 {
   // Flush all EFB pokes. Since the buffer is shared, we can't draw pokes+primitives concurrently.
   g_framebuffer_manager->FlushEFBPokes();
@@ -188,7 +186,7 @@ void VertexManagerBase::FlushData(u32 count, u32 stride)
   m_cur_buffer_pointer += count * stride;
 }
 
-u32 VertexManagerBase::GetRemainingIndices(OpcodeDecoder::Primitive primitive) const
+u32 VertexManagerBase::GetRemainingIndices(int primitive) const
 {
   const u32 index_len = MAXIBUFFERSIZE - m_index_generator.GetIndexLen();
 
@@ -196,22 +194,22 @@ u32 VertexManagerBase::GetRemainingIndices(OpcodeDecoder::Primitive primitive) c
   {
     switch (primitive)
     {
-    case Primitive::GX_DRAW_QUADS:
-    case Primitive::GX_DRAW_QUADS_2:
+    case OpcodeDecoder::GX_DRAW_QUADS:
+    case OpcodeDecoder::GX_DRAW_QUADS_2:
       return index_len / 5 * 4;
-    case Primitive::GX_DRAW_TRIANGLES:
+    case OpcodeDecoder::GX_DRAW_TRIANGLES:
       return index_len / 4 * 3;
-    case Primitive::GX_DRAW_TRIANGLE_STRIP:
+    case OpcodeDecoder::GX_DRAW_TRIANGLE_STRIP:
       return index_len / 1 - 1;
-    case Primitive::GX_DRAW_TRIANGLE_FAN:
+    case OpcodeDecoder::GX_DRAW_TRIANGLE_FAN:
       return index_len / 6 * 4 + 1;
 
-    case Primitive::GX_DRAW_LINES:
+    case OpcodeDecoder::GX_DRAW_LINES:
       return index_len;
-    case Primitive::GX_DRAW_LINE_STRIP:
+    case OpcodeDecoder::GX_DRAW_LINE_STRIP:
       return index_len / 2 + 1;
 
-    case Primitive::GX_DRAW_POINTS:
+    case OpcodeDecoder::GX_DRAW_POINTS:
       return index_len;
 
     default:
@@ -222,22 +220,22 @@ u32 VertexManagerBase::GetRemainingIndices(OpcodeDecoder::Primitive primitive) c
   {
     switch (primitive)
     {
-    case Primitive::GX_DRAW_QUADS:
-    case Primitive::GX_DRAW_QUADS_2:
+    case OpcodeDecoder::GX_DRAW_QUADS:
+    case OpcodeDecoder::GX_DRAW_QUADS_2:
       return index_len / 6 * 4;
-    case Primitive::GX_DRAW_TRIANGLES:
+    case OpcodeDecoder::GX_DRAW_TRIANGLES:
       return index_len;
-    case Primitive::GX_DRAW_TRIANGLE_STRIP:
+    case OpcodeDecoder::GX_DRAW_TRIANGLE_STRIP:
       return index_len / 3 + 2;
-    case Primitive::GX_DRAW_TRIANGLE_FAN:
+    case OpcodeDecoder::GX_DRAW_TRIANGLE_FAN:
       return index_len / 3 + 2;
 
-    case Primitive::GX_DRAW_LINES:
+    case OpcodeDecoder::GX_DRAW_LINES:
       return index_len;
-    case Primitive::GX_DRAW_LINE_STRIP:
+    case OpcodeDecoder::GX_DRAW_LINE_STRIP:
       return index_len / 2 + 1;
 
-    case Primitive::GX_DRAW_POINTS:
+    case OpcodeDecoder::GX_DRAW_POINTS:
       return index_len;
 
     default:
@@ -271,7 +269,7 @@ void VertexManagerBase::CommitBuffer(u32 num_vertices, u32 vertex_stride, u32 nu
 void VertexManagerBase::DrawCurrentBatch(u32 base_index, u32 num_indices, u32 base_vertex)
 {
   // If bounding box is enabled, we need to flush any changes first, then invalidate what we have.
-  if (g_renderer->IsBBoxEnabled() && g_ActiveConfig.bBBoxEnable &&
+  if (BoundingBox::IsEnabled() && g_ActiveConfig.bBBoxEnable &&
       g_ActiveConfig.backend_info.bSupportsBBox)
   {
     g_renderer->BBoxFlush();
@@ -352,7 +350,7 @@ void VertexManagerBase::LoadTextures()
   for (unsigned int i : usedtextures)
     g_texture_cache->Load(i);
 
-  g_texture_cache->BindTextures(usedtextures);
+  g_texture_cache->BindTextures();
 }
 
 void VertexManagerBase::Flush()

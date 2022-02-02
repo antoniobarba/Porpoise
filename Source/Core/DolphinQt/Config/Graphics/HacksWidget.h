@@ -26,7 +26,6 @@ private:
   GraphicsBool* m_skip_efb_cpu;
   GraphicsBool* m_ignore_format_changes;
   GraphicsBool* m_store_efb_copies;
-  GraphicsBool* m_defer_efb_copies;
 
   // Texture Cache
   QLabel* m_accuracy_label;
@@ -43,6 +42,7 @@ private:
   GraphicsBool* m_disable_bounding_box;
   GraphicsBool* m_vertex_rounding;
   GraphicsBool* m_save_texture_cache_state;
+  GraphicsBool* m_defer_efb_copies;
 
   void CreateWidgets();
   void ConnectWidgets();

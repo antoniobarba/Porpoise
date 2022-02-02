@@ -32,10 +32,6 @@ if(NOT WIN32 AND NOT APPLE AND NOT HAIKU)
   option(ENABLE_EGL "Enables EGL OpenGL Interface" ON)
 endif()
 
-if(NOT ANDROID)
-  option(ENABLE_CLI_TOOL "Enable dolphin-tool, a CLI-based utility for functions such as managing disc images" ON)
-endif()
-
 option(USE_SHARED_ENET "Use shared libenet if found rather than Dolphin's soon-to-compatibly-diverge version" OFF)
 option(USE_UPNP "Enables UPnP port mapping support" ON)
 option(ENABLE_NOGUI "Enable NoGUI frontend" ON)
@@ -63,6 +59,7 @@ option(ENCODE_FRAMEDUMPS "Encode framedumps in AVI format" ON)
 
 option(ENABLE_GPROF "Enable gprof profiling (must be using Debug build)" OFF)
 option(FASTLOG "Enable all logs" OFF)
+option(GDBSTUB "Enable gdb stub for remote debugging." ON)
 option(OPROFILING "Enable profiling" OFF)
 
 # TODO: Add DSPSpy
@@ -392,6 +389,10 @@ if(FASTLOG)
   add_definitions(-DDEBUGFAST)
 endif()
 
+if(GDBSTUB)
+  add_definitions(-DUSE_GDBSTUB)
+endif()
+
 if(ENABLE_VTUNE)
   set(VTUNE_DIR "/opt/intel/vtune_amplifier")
   add_definitions(-DUSE_VTUNE)
@@ -487,14 +488,8 @@ if(ENCODE_FRAMEDUMPS)
   if(WIN32 AND _M_X86_64)
     set(FFMPEG_DIR Externals/ffmpeg)
   endif()
-  find_package(FFmpeg COMPONENTS avcodec avformat avutil swresample swscale)
+  find_package(FFmpeg COMPONENTS avcodec avformat avutil swscale)
   if(FFmpeg_FOUND)
-    if(APPLE) 
-      find_library(COREMEDIA_LIBRARY CoreMedia)
-      find_library(VIDEOTOOLBOX_LIBRARY VideoToolbox)
-      find_library(COREVIDEO_LIBRARY CoreVideo)
-      find_library(AUDIOTOOLBOX_LIBRARY AudioToolbox)
-    endif()
     message(STATUS "libav/ffmpeg found, enabling AVI frame dumps")
     add_definitions(-DHAVE_FFMPEG)
   else()
@@ -564,7 +559,7 @@ if (_M_X86)
 endif()
 add_subdirectory(Externals/cpp-optparse)
 
-find_package(fmt 8.0)
+find_package(fmt 7.1)
 if(fmt_FOUND)
   message(STATUS "Using shared fmt ${fmt_VERSION}")
 else()
@@ -577,10 +572,6 @@ add_subdirectory(Externals/glslang)
 
 if(ENABLE_VULKAN)
   add_definitions(-DHAS_VULKAN)
-
-  if(APPLE)
-    add_subdirectory(Externals/MoltenVK)
-  endif()
 endif()
 
 if(NOT WIN32 OR (NOT (CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")))
@@ -933,10 +924,6 @@ set(CPACK_RPM_PACKAGE_LICENSE GPL-2.0)
 # TODO: CPACK_PACKAGE_ICON
 # TODO: CPACK_NSIS_*
 # TODO: Use CPack components for DSPSpy, etc => cpack_add_component
-
-# Debian Specific. Install dpkg-dev for automatic deps generation
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-set(CPACK_DEBIAN_PACKAGE_SECTION "Games")
 
 set(CPACK_SET_DESTDIR ON)
 set(CPACK_SOURCE_GENERATOR "TGZ;TBZ2;ZIP")

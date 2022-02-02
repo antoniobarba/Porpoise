@@ -12,12 +12,10 @@ class PointerWrap;
 
 namespace ExpansionInterface
 {
-enum class Slot : int;
-
 class CEXIAgp : public IEXIDevice
 {
 public:
-  CEXIAgp(const Slot slot);
+  CEXIAgp(const int index);
   virtual ~CEXIAgp() override;
   bool IsPresent() const override { return true; }
   void ImmWrite(u32 _uData, u32 _uSize) override;
@@ -33,7 +31,7 @@ private:
     EE_READ_TRUE = 0xB,
   };
 
-  Slot m_slot;
+  int m_slot;
 
   //! ROM
   u32 m_rom_size = 0;

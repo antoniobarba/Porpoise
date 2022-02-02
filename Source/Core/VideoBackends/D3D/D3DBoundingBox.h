@@ -2,29 +2,21 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
-
-#include "Common/CommonTypes.h"
 #include "VideoBackends/D3D/D3DBase.h"
-
-#include "VideoCommon/BoundingBox.h"
 
 namespace DX11
 {
-class D3DBoundingBox final : public BoundingBox
+class BBox
 {
 public:
-  ~D3DBoundingBox() override;
+  static ID3D11UnorderedAccessView* GetUAV();
+  static void Init();
+  static void Shutdown();
 
-  bool Initialize() override;
+  static void Flush();
+  static void Readback();
 
-protected:
-  std::vector<BBoxType> Read(u32 index, u32 length) override;
-  void Write(u32 index, const std::vector<BBoxType>& values) override;
-
-private:
-  ComPtr<ID3D11Buffer> m_buffer;
-  ComPtr<ID3D11Buffer> m_staging_buffer;
-  ComPtr<ID3D11UnorderedAccessView> m_uav;
+  static void Set(int index, int value);
+  static int Get(int index);
 };
-
-}  // namespace DX11
+};  // namespace DX11

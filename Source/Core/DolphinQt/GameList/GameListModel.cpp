@@ -8,7 +8,7 @@
 #include <QPixmap>
 #include <QRegularExpression>
 
-#include "Core/Config/MainSettings.h"
+#include "Core/ConfigManager.h"
 
 #include "DiscIO/Enums.h"
 
@@ -195,8 +195,6 @@ QVariant GameListModel::data(const QModelIndex& index, int role) const
 
       return tags.join(QStringLiteral(", "));
     }
-  default:
-    break;
   }
 
   return QVariant();
@@ -233,8 +231,6 @@ QVariant GameListModel::headerData(int section, Qt::Orientation orientation, int
     return tr("Compression");
   case Column::Tags:
     return tr("Tags");
-  default:
-    break;
   }
   return QVariant();
 }
@@ -267,13 +263,13 @@ bool GameListModel::ShouldDisplayGameListItem(int index) const
     switch (game.GetPlatform())
     {
     case DiscIO::Platform::GameCubeDisc:
-      return Config::Get(Config::MAIN_GAMELIST_LIST_GC);
+      return SConfig::GetInstance().m_ListGC;
     case DiscIO::Platform::WiiDisc:
-      return Config::Get(Config::MAIN_GAMELIST_LIST_WII);
+      return SConfig::GetInstance().m_ListWii;
     case DiscIO::Platform::WiiWAD:
-      return Config::Get(Config::MAIN_GAMELIST_LIST_WAD);
+      return SConfig::GetInstance().m_ListWad;
     case DiscIO::Platform::ELFOrDOL:
-      return Config::Get(Config::MAIN_GAMELIST_LIST_ELF_DOL);
+      return SConfig::GetInstance().m_ListElfDol;
     default:
       return false;
     }
@@ -285,34 +281,34 @@ bool GameListModel::ShouldDisplayGameListItem(int index) const
   switch (game.GetCountry())
   {
   case DiscIO::Country::Australia:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_AUSTRALIA);
+    return SConfig::GetInstance().m_ListAustralia;
   case DiscIO::Country::Europe:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_PAL);
+    return SConfig::GetInstance().m_ListPal;
   case DiscIO::Country::France:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_FRANCE);
+    return SConfig::GetInstance().m_ListFrance;
   case DiscIO::Country::Germany:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_GERMANY);
+    return SConfig::GetInstance().m_ListGermany;
   case DiscIO::Country::Italy:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_ITALY);
+    return SConfig::GetInstance().m_ListItaly;
   case DiscIO::Country::Japan:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_JPN);
+    return SConfig::GetInstance().m_ListJap;
   case DiscIO::Country::Korea:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_KOREA);
+    return SConfig::GetInstance().m_ListKorea;
   case DiscIO::Country::Netherlands:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_NETHERLANDS);
+    return SConfig::GetInstance().m_ListNetherlands;
   case DiscIO::Country::Russia:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_RUSSIA);
+    return SConfig::GetInstance().m_ListRussia;
   case DiscIO::Country::Spain:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_SPAIN);
+    return SConfig::GetInstance().m_ListSpain;
   case DiscIO::Country::Taiwan:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_TAIWAN);
+    return SConfig::GetInstance().m_ListTaiwan;
   case DiscIO::Country::USA:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_USA);
+    return SConfig::GetInstance().m_ListUsa;
   case DiscIO::Country::World:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_WORLD);
+    return SConfig::GetInstance().m_ListWorld;
   case DiscIO::Country::Unknown:
   default:
-    return Config::Get(Config::MAIN_GAMELIST_LIST_UNKNOWN);
+    return SConfig::GetInstance().m_ListUnknown;
   }
 }
 

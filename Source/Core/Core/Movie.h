@@ -17,11 +17,6 @@ struct BootParameters;
 struct GCPadStatus;
 class PointerWrap;
 
-namespace ExpansionInterface
-{
-enum class Slot : int;
-}
-
 namespace WiimoteCommon
 {
 class DataReportBuilder;
@@ -171,7 +166,7 @@ void SetReset(bool reset);
 
 bool IsConfigSaved();
 bool IsStartingFromClearSave();
-bool IsUsingMemcard(ExpansionInterface::Slot slot);
+bool IsUsingMemcard(int memcard);
 void SetGraphicsConfig();
 bool IsNetPlayRecording();
 
@@ -205,7 +200,6 @@ void CheckWiimoteStatus(int wiimote, const WiimoteCommon::DataReportBuilder& rpt
 
 std::string GetInputDisplay();
 std::string GetRTCDisplay();
-std::string GetRerecords();
 
 // Done this way to avoid mixing of core and gui code
 using GCManipFunction = std::function<void(GCPadStatus*, int)>;

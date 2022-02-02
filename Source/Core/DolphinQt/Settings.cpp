@@ -10,7 +10,6 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QFontDatabase>
-#include <QRadioButton>
 #include <QSize>
 #include <QWidget>
 
@@ -106,7 +105,7 @@ QSettings& Settings::GetQSettings()
 
 void Settings::SetThemeName(const QString& theme_name)
 {
-  Config::SetBaseOrCurrent(Config::MAIN_THEME_NAME, theme_name.toStdString());
+  SConfig::GetInstance().theme_name = theme_name.toStdString();
   emit ThemeChanged();
 }
 
@@ -216,7 +215,7 @@ void Settings::GetToolTipStyle(QColor& window_color, QColor& text_color,
 QStringList Settings::GetPaths() const
 {
   QStringList list;
-  for (const auto& path : Config::GetIsoPaths())
+  for (const auto& path : SConfig::GetInstance().m_ISOFolder)
     list << QString::fromStdString(path);
   return list;
 }
@@ -224,27 +223,25 @@ QStringList Settings::GetPaths() const
 void Settings::AddPath(const QString& qpath)
 {
   std::string path = qpath.toStdString();
-  std::vector<std::string> paths = Config::GetIsoPaths();
 
+  std::vector<std::string>& paths = SConfig::GetInstance().m_ISOFolder;
   if (std::find(paths.begin(), paths.end(), path) != paths.end())
     return;
 
   paths.emplace_back(path);
-  Config::SetIsoPaths(paths);
   emit PathAdded(qpath);
 }
 
 void Settings::RemovePath(const QString& qpath)
 {
   std::string path = qpath.toStdString();
-  std::vector<std::string> paths = Config::GetIsoPaths();
+  std::vector<std::string>& paths = SConfig::GetInstance().m_ISOFolder;
 
   auto new_end = std::remove(paths.begin(), paths.end(), path);
   if (new_end == paths.end())
     return;
 
   paths.erase(new_end, paths.end());
-  Config::SetIsoPaths(paths);
   emit PathRemoved(qpath);
 }
 
@@ -327,26 +324,26 @@ void Settings::SetStateSlot(int slot)
   GetQSettings().setValue(QStringLiteral("Emulation/StateSlot"), slot);
 }
 
-void Settings::SetCursorVisibility(Config::ShowCursor hideCursor)
+void Settings::SetHideCursor(bool hide_cursor)
 {
-  Config::SetBaseOrCurrent(Config::MAIN_SHOW_CURSOR, hideCursor);
-  emit CursorVisibilityChanged();
+  SConfig::GetInstance().bHideCursor = hide_cursor;
+  emit HideCursorChanged();
 }
 
-Config::ShowCursor Settings::GetCursorVisibility() const
+bool Settings::GetHideCursor() const
 {
-  return Config::Get(Config::MAIN_SHOW_CURSOR);
+  return SConfig::GetInstance().bHideCursor;
 }
 
 void Settings::SetLockCursor(bool lock_cursor)
 {
-  Config::SetBaseOrCurrent(Config::MAIN_LOCK_CURSOR, lock_cursor);
+  SConfig::GetInstance().bLockCursor = lock_cursor;
   emit LockCursorChanged();
 }
 
 bool Settings::GetLockCursor() const
 {
-  return Config::Get(Config::MAIN_LOCK_CURSOR);
+  return SConfig::GetInstance().bLockCursor;
 }
 
 void Settings::SetKeepWindowOnTop(bool top)
@@ -365,14 +362,14 @@ bool Settings::IsKeepWindowOnTopEnabled() const
 
 int Settings::GetVolume() const
 {
-  return Config::Get(Config::MAIN_AUDIO_VOLUME);
+  return SConfig::GetInstance().m_Volume;
 }
 
 void Settings::SetVolume(int volume)
 {
   if (GetVolume() != volume)
   {
-    Config::SetBaseOrCurrent(Config::MAIN_AUDIO_VOLUME, volume);
+    SConfig::GetInstance().m_Volume = volume;
     emit VolumeChanged(volume);
   }
 }
@@ -458,7 +455,7 @@ void Settings::SetDebugModeEnabled(bool enabled)
 {
   if (IsDebugModeEnabled() != enabled)
   {
-    Config::SetBaseOrCurrent(Config::MAIN_ENABLE_DEBUGGING, enabled);
+    SConfig::GetInstance().bEnableDebugging = enabled;
     emit DebugModeToggled(enabled);
   }
   if (enabled)
@@ -467,7 +464,7 @@ void Settings::SetDebugModeEnabled(bool enabled)
 
 bool Settings::IsDebugModeEnabled() const
 {
-  return Config::Get(Config::MAIN_ENABLE_DEBUGGING);
+  return SConfig::GetInstance().bEnableDebugging;
 }
 
 void Settings::SetRegistersVisible(bool enabled)
@@ -615,14 +612,14 @@ void Settings::SetAutoUpdateTrack(const QString& mode)
   if (mode == GetAutoUpdateTrack())
     return;
 
-  Config::SetBase(Config::MAIN_AUTOUPDATE_UPDATE_TRACK, mode.toStdString());
+  SConfig::GetInstance().m_auto_update_track = mode.toStdString();
 
   emit AutoUpdateTrackChanged(mode);
 }
 
 QString Settings::GetAutoUpdateTrack() const
 {
-  return QString::fromStdString(Config::Get(Config::MAIN_AUTOUPDATE_UPDATE_TRACK));
+  return QString::fromStdString(SConfig::GetInstance().m_auto_update_track);
 }
 
 void Settings::SetFallbackRegion(const DiscIO::Region& region)
@@ -696,14 +693,14 @@ void Settings::SetBatchModeEnabled(bool batch)
 
 bool Settings::IsSDCardInserted() const
 {
-  return Config::Get(Config::MAIN_WII_SD_CARD);
+  return SConfig::GetInstance().m_WiiSDCard;
 }
 
 void Settings::SetSDCardInserted(bool inserted)
 {
   if (IsSDCardInserted() != inserted)
   {
-    Config::SetBaseOrCurrent(Config::MAIN_WII_SD_CARD, inserted);
+    SConfig::GetInstance().m_WiiSDCard = inserted;
     emit SDCardInsertionChanged(inserted);
 
     auto* ios = IOS::HLE::GetIOS();
@@ -714,14 +711,14 @@ void Settings::SetSDCardInserted(bool inserted)
 
 bool Settings::IsUSBKeyboardConnected() const
 {
-  return Config::Get(Config::MAIN_WII_KEYBOARD);
+  return SConfig::GetInstance().m_WiiKeyboard;
 }
 
 void Settings::SetUSBKeyboardConnected(bool connected)
 {
   if (IsUSBKeyboardConnected() != connected)
   {
-    Config::SetBaseOrCurrent(Config::MAIN_WII_KEYBOARD, connected);
+    SConfig::GetInstance().m_WiiKeyboard = connected;
     emit USBKeyboardConnectionChanged(connected);
   }
 }

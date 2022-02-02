@@ -55,6 +55,10 @@ public:
 
   Gen::FixupBranch CheckIfSafeAddress(const Gen::OpArg& reg_value, Gen::X64Reg reg_addr,
                                       BitSet32 registers_in_use);
+  void UnsafeLoadRegToReg(Gen::X64Reg reg_addr, Gen::X64Reg reg_value, int accessSize,
+                          s32 offset = 0, bool signExtend = false);
+  void UnsafeLoadRegToRegNoSwap(Gen::X64Reg reg_addr, Gen::X64Reg reg_value, int accessSize,
+                                s32 offset, bool signExtend = false);
   // these return the address of the MOV, for backpatching
   void UnsafeWriteRegToReg(Gen::OpArg reg_value, Gen::X64Reg reg_addr, int accessSize,
                            s32 offset = 0, bool swap = true, Gen::MovInfo* info = nullptr);
@@ -130,9 +134,9 @@ protected:
   FarCodeCache m_far_code;
 
   // Backed up when we switch to far code.
-  u8* m_near_code = nullptr;
-  u8* m_near_code_end = nullptr;
-  bool m_near_code_write_failed = false;
+  u8* m_near_code;
+  u8* m_near_code_end;
+  bool m_near_code_write_failed;
 
   std::unordered_map<u8*, TrampolineInfo> m_back_patch_info;
   std::unordered_map<u8*, u8*> m_exception_handler_at_loc;

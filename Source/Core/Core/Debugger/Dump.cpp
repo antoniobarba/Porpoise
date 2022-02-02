@@ -9,7 +9,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/IOFile.h"
 
-CDump::CDump(const std::string& filename)
+CDump::CDump(const std::string& filename) : m_pData(nullptr)
 {
   File::IOFile pStream(filename, "rb");
   if (pStream)

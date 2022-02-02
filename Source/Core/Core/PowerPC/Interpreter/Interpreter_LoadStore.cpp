@@ -1,17 +1,15 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/PowerPC/Interpreter/Interpreter.h"
-
 #include "Common/Assert.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
 #include "Common/Swap.h"
 
-#include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "Core/PowerPC/Interpreter/ExceptionUtils.h"
+#include "Core/PowerPC/Interpreter/Interpreter.h"
 #include "Core/PowerPC/Interpreter/Interpreter_FPUtils.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/MMU.h"
@@ -452,7 +450,7 @@ void Interpreter::dcbi(UGeckoInstruction inst)
 {
   if (MSR.PR)
   {
-    GenerateProgramException(ProgramExceptionCause::PrivilegedInstruction);
+    GenerateProgramException();
     return;
   }
 
@@ -505,11 +503,8 @@ void Interpreter::dcbz(UGeckoInstruction inst)
   }
 
   // Hack to stop dcbz/dcbi over low MEM1 trashing memory.
-  if ((dcbz_addr < 0x80008000) && (dcbz_addr >= 0x80000000) &&
-      Config::Get(Config::MAIN_LOW_DCBZ_HACK))
-  {
+  if (SConfig::GetInstance().bLowDCBZHack && (dcbz_addr < 0x80008000) && (dcbz_addr >= 0x80000000))
     return;
-  }
 
   // TODO: Implement some sort of L2 emulation.
   PowerPC::ClearCacheLine(dcbz_addr & (~31));
@@ -519,7 +514,7 @@ void Interpreter::dcbz_l(UGeckoInstruction inst)
 {
   if (!HID2.LCE)
   {
-    GenerateProgramException(ProgramExceptionCause::IllegalInstruction);
+    GenerateProgramException();
     return;
   }
 
@@ -1046,7 +1041,7 @@ void Interpreter::tlbie(UGeckoInstruction inst)
 {
   if (MSR.PR)
   {
-    GenerateProgramException(ProgramExceptionCause::PrivilegedInstruction);
+    GenerateProgramException();
     return;
   }
 
@@ -1060,7 +1055,7 @@ void Interpreter::tlbsync(UGeckoInstruction inst)
 {
   if (MSR.PR)
   {
-    GenerateProgramException(ProgramExceptionCause::PrivilegedInstruction);
+    GenerateProgramException();
   }
 
   // Ignored

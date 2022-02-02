@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <optional>
 #include <string>
 #include <vector>
 
@@ -43,14 +42,9 @@ struct Patch
 const char* PatchTypeAsString(PatchType type);
 
 int GetSpeedhackCycles(const u32 addr);
-
-std::optional<PatchEntry> DeserializeLine(std::string line);
-std::string SerializeLine(const PatchEntry& entry);
-void LoadPatchSection(const std::string& section, std::vector<Patch>* patches,
-                      const IniFile& globalIni, const IniFile& localIni);
-void SavePatchSection(IniFile* local_ini, const std::vector<Patch>& patches);
+void LoadPatchSection(const std::string& section, std::vector<Patch>& patches, IniFile& globalIni,
+                      IniFile& localIni);
 void LoadPatches();
-
 bool ApplyFramePatches();
 void Shutdown();
 void Reload();

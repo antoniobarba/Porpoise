@@ -49,7 +49,7 @@ public:
 
   virtual u32 GetDataSize() const = 0;
 
-  u8* data_ptr = nullptr;
+  u8* data_ptr;
 };
 
 std::unique_ptr<DataReportManipulator> MakeDataReportManipulator(InputReportID rpt_id,

@@ -37,8 +37,6 @@
 #undef VULKAN_INSTANCE_ENTRY_POINT
 #undef VULKAN_MODULE_ENTRY_POINT
 
-#include "Common/Logging/Log.h"
-
 namespace Vulkan
 {
 bool LoadVulkanLibrary();
@@ -47,10 +45,8 @@ bool LoadVulkanDeviceFunctions(VkDevice device);
 void UnloadVulkanLibrary();
 
 const char* VkResultToString(VkResult res);
-void LogVulkanResult(Common::Log::LogLevel level, const char* func_name, VkResult res,
-                     const char* msg, ...);
+void LogVulkanResult(int level, const char* func_name, VkResult res, const char* msg, ...);
 
-#define LOG_VULKAN_ERROR(res, ...)                                                                 \
-  LogVulkanResult(Common::Log::LogLevel::LERROR, __func__, res, __VA_ARGS__)
+#define LOG_VULKAN_ERROR(res, ...) LogVulkanResult(2, __func__, res, __VA_ARGS__)
 
 }  // namespace Vulkan

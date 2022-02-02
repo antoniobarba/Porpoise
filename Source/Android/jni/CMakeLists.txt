@@ -6,7 +6,6 @@ add_library(main SHARED
   GameList/GameFileCache.cpp
   IniFile.cpp
   MainAndroid.cpp
-  RiivolutionPatches.cpp
   WiiUtils.cpp
 )
 

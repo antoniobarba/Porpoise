@@ -187,8 +187,7 @@ int main(int argc, char* argv[])
     const std::list<std::string> paths_list = options.all("exec");
     const std::vector<std::string> paths{std::make_move_iterator(std::begin(paths_list)),
                                          std::make_move_iterator(std::end(paths_list))};
-    boot = BootParameters::GenerateFromFile(
-        paths, BootSessionData(save_state_path, DeleteSavestateAfterBoot::No));
+    boot = BootParameters::GenerateFromFile(paths, save_state_path);
     game_specified = true;
   }
   else if (options.is_set("nand_title"))
@@ -205,8 +204,7 @@ int main(int argc, char* argv[])
   }
   else if (args.size())
   {
-    boot = BootParameters::GenerateFromFile(
-        args.front(), BootSessionData(save_state_path, DeleteSavestateAfterBoot::No));
+    boot = BootParameters::GenerateFromFile(args.front(), save_state_path);
     args.erase(args.begin());
     game_specified = true;
   }

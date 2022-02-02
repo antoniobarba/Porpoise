@@ -15,7 +15,6 @@
 #include "Core/Config/MainSettings.h"
 #include "Core/Config/SYSCONFSettings.h"
 #include "Core/Config/SessionSettings.h"
-#include "Core/HW/EXI/EXI.h"
 #include "Core/NetPlayProto.h"
 
 namespace ConfigLoaders
@@ -38,9 +37,9 @@ public:
     layer->Set(Config::MAIN_DSP_HLE, m_settings.m_DSPHLE);
     layer->Set(Config::MAIN_OVERCLOCK_ENABLE, m_settings.m_OCEnable);
     layer->Set(Config::MAIN_OVERCLOCK, m_settings.m_OCFactor);
-    for (ExpansionInterface::Slot slot : ExpansionInterface::SLOTS)
-      layer->Set(Config::GetInfoForEXIDevice(slot), m_settings.m_EXIDevice[slot]);
-    layer->Set(Config::MAIN_MEMORY_CARD_SIZE, m_settings.m_MemcardSizeOverride);
+    layer->Set(Config::MAIN_SLOT_A, static_cast<int>(m_settings.m_EXIDevice[0]));
+    layer->Set(Config::MAIN_SLOT_B, static_cast<int>(m_settings.m_EXIDevice[1]));
+    layer->Set(Config::MAIN_SERIAL_PORT_1, static_cast<int>(m_settings.m_EXIDevice[2]));
     layer->Set(Config::SESSION_SAVE_DATA_WRITABLE, m_settings.m_WriteToMemcard);
     layer->Set(Config::MAIN_RAM_OVERRIDE_ENABLE, m_settings.m_RAMOverrideEnable);
     layer->Set(Config::MAIN_MEM1_SIZE, m_settings.m_Mem1Size);
@@ -70,8 +69,6 @@ public:
     layer->Set(Config::GFX_SAFE_TEXTURE_CACHE_COLOR_SAMPLES,
                m_settings.m_SafeTextureCacheColorSamples);
     layer->Set(Config::GFX_PERF_QUERIES_ENABLE, m_settings.m_PerfQueriesEnable);
-    layer->Set(Config::MAIN_FLOAT_EXCEPTIONS, m_settings.m_FloatExceptions);
-    layer->Set(Config::MAIN_DIVIDE_BY_ZERO_EXCEPTIONS, m_settings.m_DivideByZeroExceptions);
     layer->Set(Config::MAIN_FPRF, m_settings.m_FPRF);
     layer->Set(Config::MAIN_ACCURATE_NANS, m_settings.m_AccurateNaNs);
     layer->Set(Config::MAIN_DISABLE_ICACHE, m_settings.m_DisableICache);
@@ -93,8 +90,6 @@ public:
     layer->Set(Config::GFX_HACK_EFB_DEFER_INVALIDATION, m_settings.m_EFBAccessDeferInvalidation);
 
     layer->Set(Config::SESSION_USE_FMA, m_settings.m_UseFMA);
-
-    layer->Set(Config::MAIN_BLUETOOTH_PASSTHROUGH_ENABLED, false);
 
     if (m_settings.m_StrictSettingsSync)
     {

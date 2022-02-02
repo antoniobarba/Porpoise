@@ -4,7 +4,6 @@
 #pragma once
 
 #include <array>
-#include <optional>
 
 #include "Common/CommonTypes.h"
 
@@ -22,25 +21,20 @@ constexpr u32 ICACHE_VMEM_BIT = 0x20000000;
 
 struct InstructionCache
 {
-  std::array<std::array<std::array<u32, ICACHE_BLOCK_SIZE>, ICACHE_WAYS>, ICACHE_SETS> data{};
-  std::array<std::array<u32, ICACHE_WAYS>, ICACHE_SETS> tags{};
-  std::array<u32, ICACHE_SETS> plru{};
-  std::array<u32, ICACHE_SETS> valid{};
+  std::array<std::array<std::array<u32, ICACHE_BLOCK_SIZE>, ICACHE_WAYS>, ICACHE_SETS> data;
+  std::array<std::array<u32, ICACHE_WAYS>, ICACHE_SETS> tags;
+  std::array<u32, ICACHE_SETS> plru;
+  std::array<u32, ICACHE_SETS> valid;
 
-  std::array<u8, 1 << 20> lookup_table{};
-  std::array<u8, 1 << 21> lookup_table_ex{};
-  std::array<u8, 1 << 20> lookup_table_vmem{};
+  std::array<u8, 1 << 20> lookup_table;
+  std::array<u8, 1 << 21> lookup_table_ex;
+  std::array<u8, 1 << 20> lookup_table_vmem;
 
-  bool m_disable_icache = false;
-  std::optional<size_t> m_config_callback_id = std::nullopt;
-
-  InstructionCache() = default;
-  ~InstructionCache();
+  InstructionCache();
   u32 ReadInstruction(u32 addr);
   void Invalidate(u32 addr);
   void Init();
   void Reset();
   void DoState(PointerWrap& p);
-  void RefreshConfig();
 };
 }  // namespace PowerPC

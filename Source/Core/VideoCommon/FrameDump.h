@@ -30,10 +30,10 @@ public:
 
   struct FrameData
   {
-    const u8* data = nullptr;
-    int width = 0;
-    int height = 0;
-    int stride = 0;
+    const u8* data;
+    int width;
+    int height;
+    int stride;
     FrameState state;
   };
 

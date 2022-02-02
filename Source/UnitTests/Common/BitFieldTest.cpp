@@ -201,7 +201,7 @@ TEST(BitField, Alignment)
 template <>
 struct fmt::formatter<TestEnum> : EnumFormatter<TestEnum::D>
 {
-  constexpr formatter() : EnumFormatter({"A", "B", "C", "D"}) {}
+  formatter() : EnumFormatter({"A", "B", "C", "D"}) {}
 };
 
 // Test behavior of using BitFields with fmt

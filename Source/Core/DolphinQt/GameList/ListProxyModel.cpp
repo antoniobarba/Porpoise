@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "DolphinQt/GameList/ListProxyModel.h"
-
 #include "DolphinQt/GameList/GameListModel.h"
 
 ListProxyModel::ListProxyModel(QObject* parent) : QSortFilterProxyModel(parent)

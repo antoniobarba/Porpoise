@@ -4,6 +4,7 @@
 #pragma once
 
 #include <algorithm>
+#include <cctype>
 #include <list>
 #include <map>
 #include <string>
@@ -21,8 +22,9 @@ struct CaseInsensitiveStringCompare
   bool operator()(std::string_view a, std::string_view b) const
   {
     return std::lexicographical_compare(
-        a.begin(), a.end(), b.begin(), b.end(),
-        [](char lhs, char rhs) { return Common::ToLower(lhs) < Common::ToLower(rhs); });
+        a.begin(), a.end(), b.begin(), b.end(), [](char lhs, char rhs) {
+          return std::tolower(static_cast<u8>(lhs)) < std::tolower(static_cast<u8>(rhs));
+        });
   }
 
   static bool IsEqual(std::string_view a, std::string_view b)
@@ -31,7 +33,7 @@ struct CaseInsensitiveStringCompare
       return false;
 
     return std::equal(a.begin(), a.end(), b.begin(), b.end(), [](char lhs, char rhs) {
-      return Common::ToLower(lhs) == Common::ToLower(rhs);
+      return std::tolower(static_cast<u8>(lhs)) == std::tolower(static_cast<u8>(rhs));
     });
   }
 };

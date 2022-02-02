@@ -1,8 +1,6 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/PowerPC/Interpreter/Interpreter.h"
-
 #include <algorithm>
 #include <tuple>
 #include <type_traits>
@@ -13,6 +11,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
 #include "Core/PowerPC/Interpreter/ExceptionUtils.h"
+#include "Core/PowerPC/Interpreter/Interpreter.h"
 #include "Core/PowerPC/Interpreter/Interpreter_FPUtils.h"
 #include "Core/PowerPC/MMU.h"
 #include "Core/PowerPC/PowerPC.h"
@@ -312,7 +311,7 @@ void Interpreter::psq_l(UGeckoInstruction inst)
 {
   if (HID2.LSQE == 0)
   {
-    GenerateProgramException(ProgramExceptionCause::IllegalInstruction);
+    GenerateProgramException();
     return;
   }
 
@@ -324,7 +323,7 @@ void Interpreter::psq_lu(UGeckoInstruction inst)
 {
   if (HID2.LSQE == 0)
   {
-    GenerateProgramException(ProgramExceptionCause::IllegalInstruction);
+    GenerateProgramException();
     return;
   }
 
@@ -343,7 +342,7 @@ void Interpreter::psq_st(UGeckoInstruction inst)
 {
   if (HID2.LSQE == 0)
   {
-    GenerateProgramException(ProgramExceptionCause::IllegalInstruction);
+    GenerateProgramException();
     return;
   }
 
@@ -355,7 +354,7 @@ void Interpreter::psq_stu(UGeckoInstruction inst)
 {
   if (HID2.LSQE == 0)
   {
-    GenerateProgramException(ProgramExceptionCause::IllegalInstruction);
+    GenerateProgramException();
     return;
   }
 

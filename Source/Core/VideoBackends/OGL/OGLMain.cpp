@@ -33,8 +33,6 @@ Make AA apply instantly during gameplay if possible
 
 */
 
-#include "VideoBackends/OGL/VideoBackend.h"
-
 #include <memory>
 #include <string>
 #include <vector>
@@ -46,11 +44,13 @@ Make AA apply instantly during gameplay if possible
 
 #include "Core/Config/GraphicsSettings.h"
 
+#include "VideoBackends/OGL/OGLBoundingBox.h"
 #include "VideoBackends/OGL/OGLPerfQuery.h"
 #include "VideoBackends/OGL/OGLRender.h"
 #include "VideoBackends/OGL/OGLVertexManager.h"
 #include "VideoBackends/OGL/ProgramShaderCache.h"
 #include "VideoBackends/OGL/SamplerCache.h"
+#include "VideoBackends/OGL/VideoBackend.h"
 
 #include "VideoCommon/FramebufferManager.h"
 #include "VideoCommon/TextureCacheBase.h"
@@ -93,7 +93,6 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsPartialDepthCopies = true;
   g_Config.backend_info.bSupportsShaderBinaries = false;
   g_Config.backend_info.bSupportsPipelineCacheData = false;
-  g_Config.backend_info.bSupportsLodBiasInSampler = true;
 
   // TODO: There is a bug here, if texel buffers or SSBOs/atomics are not supported the graphics
   // options will show the option when it is not supported. The only way around this would be
@@ -101,7 +100,7 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsGPUTextureDecoding = true;
   g_Config.backend_info.bSupportsBBox = true;
 
-  // Overwritten in OGLRender.cpp later
+  // Overwritten in Render.cpp later
   g_Config.backend_info.bSupportsDualSourceBlend = true;
   g_Config.backend_info.bSupportsPrimitiveRestart = true;
   g_Config.backend_info.bSupportsPaletteConversion = true;
@@ -109,8 +108,6 @@ void VideoBackend::InitBackendInfo()
   g_Config.backend_info.bSupportsDepthClamp = true;
   g_Config.backend_info.bSupportsST3CTextures = false;
   g_Config.backend_info.bSupportsBPTCTextures = false;
-  g_Config.backend_info.bSupportsCoarseDerivatives = false;
-  g_Config.backend_info.bSupportsTextureQueryLevels = false;
 
   g_Config.backend_info.Adapters.clear();
 
@@ -189,6 +186,7 @@ bool VideoBackend::Initialize(const WindowSystemInfo& wsi)
   g_perf_query = GetPerfQuery();
   g_texture_cache = std::make_unique<TextureCacheBase>();
   g_sampler_cache = std::make_unique<SamplerCache>();
+  BoundingBox::Init();
 
   if (!g_vertex_manager->Initialize() || !g_shader_cache->Initialize() ||
       !g_renderer->Initialize() || !g_framebuffer_manager->Initialize() ||
@@ -207,6 +205,7 @@ void VideoBackend::Shutdown()
 {
   g_shader_cache->Shutdown();
   g_renderer->Shutdown();
+  BoundingBox::Shutdown();
   g_sampler_cache.reset();
   g_texture_cache.reset();
   g_perf_query.reset();

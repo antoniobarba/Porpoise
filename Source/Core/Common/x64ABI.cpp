@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "Common/x64ABI.h"
-
 #include "Common/CommonTypes.h"
 #include "Common/x64Emitter.h"
 

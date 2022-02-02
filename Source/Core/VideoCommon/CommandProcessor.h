@@ -20,8 +20,8 @@ struct SCPFifoStruct
   // fifo registers
   std::atomic<u32> CPBase;
   std::atomic<u32> CPEnd;
-  u32 CPHiWatermark = 0;
-  u32 CPLoWatermark = 0;
+  u32 CPHiWatermark;
+  u32 CPLoWatermark;
   std::atomic<u32> CPReadWriteDistance;
   std::atomic<u32> CPWritePointer;
   std::atomic<u32> CPReadPointer;
@@ -40,7 +40,6 @@ struct SCPFifoStruct
   std::atomic<u32> bFF_LoWatermark;
   std::atomic<u32> bFF_HiWatermark;
 
-  void Init();
   void DoState(PointerWrap& p);
 };
 
@@ -169,7 +168,7 @@ void SetCpClearRegister();
 void SetCpControlRegister();
 void SetCpStatusRegister();
 
-void HandleUnknownOpcode(u8 cmd_byte, const u8* buffer, bool preprocess);
+void HandleUnknownOpcode(u8 cmd_byte, void* buffer, bool preprocess);
 
 u32 GetPhysicalAddressMask();
 

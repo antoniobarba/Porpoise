@@ -106,14 +106,20 @@ std::string GetStringT(const char* string)
   return s_str_translator(string);
 }
 
-static bool ShowMessageAlert(std::string_view text, bool yes_no, Common::Log::LogType log_type,
-                             MsgType style, const char* file, int line)
+// This is the first stop for gui alerts where the log is updated and the
+// correct window is shown
+bool MsgAlert(bool yes_no, MsgType style, const char* format, ...)
 {
+  // Read message and write it to the log
   const char* caption = GetCaption(style);
-  // Directly call GenericLogFmt rather than using the normal log macros so that we can use the
-  // caller's line file and line number
-  Common::Log::GenericLogFmt<2>(Common::Log::LogLevel::LERROR, log_type, file, line,
-                                FMT_STRING("{}: {}"), caption, text);
+  char buffer[2048];
+
+  va_list args;
+  va_start(args, format);
+  CharArrayFromFormatV(buffer, sizeof(buffer) - 1, s_str_translator(format).c_str(), args);
+  va_end(args);
+
+  ERROR_LOG_FMT(MASTER_LOG, "{}: {}", caption, buffer);
 
   // Panic alerts.
   if (style == MsgType::Warning && s_abort_on_panic_alert)
@@ -125,19 +131,26 @@ static bool ShowMessageAlert(std::string_view text, bool yes_no, Common::Log::Lo
   if (s_msg_handler != nullptr &&
       (s_alert_enabled || style == MsgType::Question || style == MsgType::Critical))
   {
-    return s_msg_handler(caption, text.data(), yes_no, style);
+    return s_msg_handler(caption, buffer, yes_no, style);
   }
 
   return true;
 }
 
-// This is the first stop for gui alerts where the log is updated and the
-// correct window is shown, when using fmt
-bool MsgAlertFmtImpl(bool yes_no, MsgType style, Common::Log::LogType log_type, const char* file,
-                     int line, fmt::string_view format, const fmt::format_args& args)
+bool MsgAlertFmtImpl(bool yes_no, MsgType style, fmt::string_view format,
+                     const fmt::format_args& args)
 {
+  const char* caption = GetCaption(style);
   const auto message = fmt::vformat(format, args);
+  ERROR_LOG_FMT(MASTER_LOG, "{}: {}", caption, message);
 
-  return ShowMessageAlert(message, yes_no, log_type, style, file, line);
+  // Don't ignore questions, especially AskYesNo, PanicYesNo could be ignored
+  if (s_msg_handler != nullptr &&
+      (s_alert_enabled || style == MsgType::Question || style == MsgType::Critical))
+  {
+    return s_msg_handler(caption, message.c_str(), yes_no, style);
+  }
+
+  return true;
 }
 }  // namespace Common

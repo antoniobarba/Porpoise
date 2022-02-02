@@ -8,10 +8,8 @@
 
 #include "Common/Assert.h"
 #include "Common/CommonFuncs.h"
-#include "Common/HRWrap.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
-
 #include "VideoCommon/VideoConfig.h"
 
 static bool IsTearingSupported(IDXGIFactory2* dxgi_factory)
@@ -127,7 +125,7 @@ bool SwapChain::CreateSwapChain(bool stereo)
 
   if (FAILED(hr))
   {
-    PanicAlertFmt("Failed to create swap chain: {}", Common::HRWrap(hr));
+    PanicAlertFmt("Failed to create swap chain with HRESULT {:08X}", hr);
     return false;
   }
 
@@ -135,7 +133,7 @@ bool SwapChain::CreateSwapChain(bool stereo)
   hr = m_dxgi_factory->MakeWindowAssociation(static_cast<HWND>(m_wsi.render_surface),
                                              DXGI_MWA_NO_WINDOW_CHANGES | DXGI_MWA_NO_ALT_ENTER);
   if (FAILED(hr))
-    WARN_LOG_FMT(VIDEO, "MakeWindowAssociation() failed: {}", Common::HRWrap(hr));
+    WARN_LOG_FMT(VIDEO, "MakeWindowAssociation() failed with HRESULT {:08X}", hr);
 
   m_stereo = stereo;
   if (!CreateSwapChainBuffers())
@@ -168,7 +166,7 @@ bool SwapChain::ResizeSwapChain()
                                            GetDXGIFormatForAbstractFormat(m_texture_format, false),
                                            GetSwapChainFlags());
   if (FAILED(hr))
-    WARN_LOG_FMT(VIDEO, "ResizeBuffers() failed: {}", Common::HRWrap(hr));
+    WARN_LOG_FMT(VIDEO, "ResizeBuffers() failed with HRESULT {:08X}", hr);
 
   DXGI_SWAP_CHAIN_DESC desc;
   if (SUCCEEDED(m_swap_chain->GetDesc(&desc)))
@@ -238,7 +236,7 @@ bool SwapChain::Present()
   HRESULT hr = m_swap_chain->Present(static_cast<UINT>(g_ActiveConfig.bVSyncActive), present_flags);
   if (FAILED(hr))
   {
-    WARN_LOG_FMT(VIDEO, "Swap chain present failed: {}", Common::HRWrap(hr));
+    WARN_LOG_FMT(VIDEO, "Swap chain present failed with HRESULT {:08X}", hr);
     return false;
   }
 

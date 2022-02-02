@@ -33,9 +33,11 @@ void Jit64::lXXx(UGeckoInstruction inst)
   int a = inst.RA, b = inst.RB, d = inst.RD;
 
   // Skip disabled JIT instructions
-  FALLBACK_IF(bJITLoadStorelbzxOff && (inst.OPCD == 31) && (inst.SUBOP10 == 87));
-  FALLBACK_IF(bJITLoadStorelXzOff && ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)));
-  FALLBACK_IF(bJITLoadStorelwzOff && (inst.OPCD == 32));
+  FALLBACK_IF(SConfig::GetInstance().bJITLoadStorelbzxOff && (inst.OPCD == 31) &&
+              (inst.SUBOP10 == 87));
+  FALLBACK_IF(SConfig::GetInstance().bJITLoadStorelXzOff &&
+              ((inst.OPCD == 34) || (inst.OPCD == 40) || (inst.OPCD == 32)));
+  FALLBACK_IF(SConfig::GetInstance().bJITLoadStorelwzOff && (inst.OPCD == 32));
 
   // Determine memory access size and sign extend
   int accessSize = 0;
@@ -413,7 +415,7 @@ void Jit64::dcbz(UGeckoInstruction inst)
   }
 
   FixupBranch end_dcbz_hack;
-  if (m_low_dcbz_hack)
+  if (SConfig::GetInstance().bLowDCBZHack)
   {
     // HACK: Don't clear any memory in the [0x8000'0000, 0x8000'8000) region.
     CMP(32, R(RSCRATCH), Imm32(0x8000'8000));
@@ -454,7 +456,7 @@ void Jit64::dcbz(UGeckoInstruction inst)
     SetJumpTarget(end_far_code);
   }
 
-  if (m_low_dcbz_hack)
+  if (SConfig::GetInstance().bLowDCBZHack)
     SetJumpTarget(end_dcbz_hack);
 }
 

@@ -50,7 +50,9 @@ Tilt::ReshapeData Tilt::GetReshapableState(bool adjusted) const
   if (!adjusted)
     return {x, y};
 
-  return Reshape(x, y, GetModifierInput()->GetState());
+  const ControlState modifier = controls[4]->GetState();
+
+  return Reshape(x, y, modifier);
 }
 
 Tilt::StateData Tilt::GetState() const
@@ -72,11 +74,6 @@ ControlState Tilt::GetDefaultInputRadiusAtAngle(double ang) const
 ControlState Tilt::GetMaxRotationalVelocity() const
 {
   return m_max_rotational_velocity.GetValue() * MathUtil::TAU;
-}
-
-Control* Tilt::GetModifierInput() const
-{
-  return controls[4].get();
 }
 
 }  // namespace ControllerEmu

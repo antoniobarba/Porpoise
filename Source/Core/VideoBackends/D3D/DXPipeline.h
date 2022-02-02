@@ -5,8 +5,6 @@
 
 #include <d3d11.h>
 #include <memory>
-
-#include "VideoBackends/D3D/D3DBase.h"
 #include "VideoCommon/AbstractPipeline.h"
 
 namespace DX11

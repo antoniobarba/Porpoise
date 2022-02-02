@@ -1,8 +1,6 @@
 // Copyright 2010 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/HW/WiimoteReal/IOLinux.h"
-
 #include <bluetooth/bluetooth.h>
 #include <bluetooth/hci.h>
 #include <bluetooth/hci_lib.h>
@@ -12,6 +10,7 @@
 
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
+#include "Core/HW/WiimoteReal/IOLinux.h"
 
 namespace WiimoteReal
 {

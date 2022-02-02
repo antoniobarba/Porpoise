@@ -3,8 +3,6 @@
 
 #include "VideoCommon/ShaderCache.h"
 
-#include <fmt/format.h>
-
 #include "Common/Assert.h"
 #include "Common/FileUtil.h"
 #include "Common/MsgHandler.h"
@@ -539,8 +537,7 @@ const AbstractShader* ShaderCache::CreateGeometryShader(const GeometryShaderUid&
   const ShaderCode source_code =
       GenerateGeometryShaderCode(m_api_type, m_host_config, uid.GetUidData());
   std::unique_ptr<AbstractShader> shader =
-      g_renderer->CreateShaderFromSource(ShaderStage::Geometry, source_code.GetBuffer(),
-                                         fmt::format("Geometry shader: {}", *uid.GetUidData()));
+      g_renderer->CreateShaderFromSource(ShaderStage::Geometry, source_code.GetBuffer());
 
   auto& entry = m_gs_cache.shader_map[uid];
   entry.pending = false;
@@ -586,9 +583,7 @@ AbstractPipelineConfig ShaderCache::GetGXPipelineConfig(
   config.blending_state = blending_state;
   config.framebuffer_state = g_framebuffer_manager->GetEFBFramebufferState();
 
-  // We can use framebuffer fetch to emulate logic ops in the fragment shader.
-  if (config.blending_state.logicopenable && !g_ActiveConfig.backend_info.bSupportsLogicOp &&
-      !g_ActiveConfig.backend_info.bSupportsFramebufferFetch)
+  if (config.blending_state.logicopenable && !g_ActiveConfig.backend_info.bSupportsLogicOp)
   {
     WARN_LOG_FMT(VIDEO,
                  "Approximating logic op with blending, this will produce incorrect rendering.");
@@ -770,7 +765,7 @@ void ShaderCache::LoadPipelineUIDCache()
 
       // We open the file for reading and writing, so we must seek to the end before writing.
       if (uid_file_valid)
-        uid_file_valid = m_gx_pipeline_uid_cache_file.Seek(expected_size, File::SeekOrigin::Begin);
+        uid_file_valid = m_gx_pipeline_uid_cache_file.Seek(expected_size, SEEK_SET);
     }
 
     // If the file is invalid, close it. We re-open and truncate it below.
@@ -1098,7 +1093,7 @@ void ShaderCache::QueueUberShaderPipelines()
   // All attributes will be enabled in GetUberVertexFormat.
   PortableVertexDeclaration dummy_vertex_decl = {};
   dummy_vertex_decl.position.components = 4;
-  dummy_vertex_decl.position.type = ComponentFormat::Float;
+  dummy_vertex_decl.position.type = VAR_FLOAT;
   dummy_vertex_decl.position.enable = true;
   dummy_vertex_decl.stride = sizeof(float) * 4;
   NativeVertexFormat* dummy_vertex_format =
@@ -1159,9 +1154,7 @@ ShaderCache::GetEFBCopyToVRAMPipeline(const TextureConversionShaderGen::TCShader
     return iter->second.get();
 
   auto shader_code = TextureConversionShaderGen::GeneratePixelShader(m_api_type, uid.GetUidData());
-  auto shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Pixel, shader_code.GetBuffer(),
-      fmt::format("EFB copy to VRAM pixel shader: {}", *uid.GetUidData()));
+  auto shader = g_renderer->CreateShaderFromSource(ShaderStage::Pixel, shader_code.GetBuffer());
   if (!shader)
   {
     m_efb_copy_to_vram_pipelines.emplace(uid, nullptr);
@@ -1191,8 +1184,7 @@ const AbstractPipeline* ShaderCache::GetEFBCopyToRAMPipeline(const EFBCopyParams
 
   const std::string shader_code =
       TextureConversionShaderTiled::GenerateEncodingShader(uid, m_api_type);
-  const auto shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Pixel, shader_code, fmt::format("EFB copy to RAM pixel shader: {}", uid));
+  const auto shader = g_renderer->CreateShaderFromSource(ShaderStage::Pixel, shader_code);
   if (!shader)
   {
     m_efb_copy_to_ram_pipelines.emplace(uid, nullptr);
@@ -1214,34 +1206,29 @@ const AbstractPipeline* ShaderCache::GetEFBCopyToRAMPipeline(const EFBCopyParams
 bool ShaderCache::CompileSharedPipelines()
 {
   m_screen_quad_vertex_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Vertex, FramebufferShaderGen::GenerateScreenQuadVertexShader(),
-      "Screen quad vertex shader");
+      ShaderStage::Vertex, FramebufferShaderGen::GenerateScreenQuadVertexShader());
   m_texture_copy_vertex_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Vertex, FramebufferShaderGen::GenerateTextureCopyVertexShader(),
-      "Texture copy vertex shader");
+      ShaderStage::Vertex, FramebufferShaderGen::GenerateTextureCopyVertexShader());
   m_efb_copy_vertex_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Vertex, TextureConversionShaderGen::GenerateVertexShader(m_api_type).GetBuffer(),
-      "EFB copy vertex shader");
+      ShaderStage::Vertex,
+      TextureConversionShaderGen::GenerateVertexShader(m_api_type).GetBuffer());
   if (!m_screen_quad_vertex_shader || !m_texture_copy_vertex_shader || !m_efb_copy_vertex_shader)
     return false;
 
   if (UseGeometryShaderForEFBCopies())
   {
     m_texcoord_geometry_shader = g_renderer->CreateShaderFromSource(
-        ShaderStage::Geometry, FramebufferShaderGen::GeneratePassthroughGeometryShader(1, 0),
-        "Texcoord passthrough geometry shader");
+        ShaderStage::Geometry, FramebufferShaderGen::GeneratePassthroughGeometryShader(1, 0));
     m_color_geometry_shader = g_renderer->CreateShaderFromSource(
-        ShaderStage::Geometry, FramebufferShaderGen::GeneratePassthroughGeometryShader(0, 1),
-        "Color passthrough geometry shader");
+        ShaderStage::Geometry, FramebufferShaderGen::GeneratePassthroughGeometryShader(0, 1));
     if (!m_texcoord_geometry_shader || !m_color_geometry_shader)
       return false;
   }
 
   m_texture_copy_pixel_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Pixel, FramebufferShaderGen::GenerateTextureCopyPixelShader(),
-      "Texture copy pixel shader");
+      ShaderStage::Pixel, FramebufferShaderGen::GenerateTextureCopyPixelShader());
   m_color_pixel_shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Pixel, FramebufferShaderGen::GenerateColorPixelShader(), "Color pixel shader");
+      ShaderStage::Pixel, FramebufferShaderGen::GenerateColorPixelShader());
   if (!m_texture_copy_pixel_shader || !m_color_pixel_shader)
     return false;
 
@@ -1274,11 +1261,9 @@ bool ShaderCache::CompileSharedPipelines()
 
     for (size_t i = 0; i < NUM_PALETTE_CONVERSION_SHADERS; i++)
     {
-      TLUTFormat format = static_cast<TLUTFormat>(i);
       auto shader = g_renderer->CreateShaderFromSource(
-          ShaderStage::Pixel,
-          TextureConversionShaderTiled::GeneratePaletteConversionShader(format, m_api_type),
-          fmt::format("Palette conversion pixel shader: {}", format));
+          ShaderStage::Pixel, TextureConversionShaderTiled::GeneratePaletteConversionShader(
+                                  static_cast<TLUTFormat>(i), m_api_type));
       if (!shader)
         return false;
 
@@ -1314,9 +1299,8 @@ const AbstractPipeline* ShaderCache::GetTextureReinterpretPipeline(TextureFormat
     return nullptr;
   }
 
-  std::unique_ptr<AbstractShader> shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Pixel, shader_source,
-      fmt::format("Texture reinterpret pixel shader: {} to {}", from_format, to_format));
+  std::unique_ptr<AbstractShader> shader =
+      g_renderer->CreateShaderFromSource(ShaderStage::Pixel, shader_source);
   if (!shader)
   {
     m_texture_reinterpret_pipelines.emplace(key, nullptr);
@@ -1353,9 +1337,8 @@ const AbstractShader* ShaderCache::GetTextureDecodingShader(TextureFormat format
     return nullptr;
   }
 
-  std::unique_ptr<AbstractShader> shader = g_renderer->CreateShaderFromSource(
-      ShaderStage::Compute, shader_source,
-      fmt::format("Texture decoding compute shader: {}, {}", format, palette_format));
+  std::unique_ptr<AbstractShader> shader =
+      g_renderer->CreateShaderFromSource(ShaderStage::Compute, shader_source);
   if (!shader)
   {
     m_texture_decoding_shaders.emplace(key, nullptr);

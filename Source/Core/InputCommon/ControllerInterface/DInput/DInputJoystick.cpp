@@ -1,8 +1,6 @@
 // Copyright 2010 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "InputCommon/ControllerInterface/DInput/DInputJoystick.h"
-
 #include <algorithm>
 #include <limits>
 #include <mutex>
@@ -10,10 +8,10 @@
 #include <sstream>
 #include <type_traits>
 
-#include "Common/HRWrap.h"
 #include "Common/Logging/Log.h"
 #include "InputCommon/ControllerInterface/ControllerInterface.h"
 #include "InputCommon/ControllerInterface/DInput/DInput.h"
+#include "InputCommon/ControllerInterface/DInput/DInputJoystick.h"
 #include "InputCommon/ControllerInterface/DInput/XInputFilter.h"
 
 namespace ciface::DInput
@@ -63,14 +61,12 @@ void InitJoystick(IDirectInput8* const idi8, HWND hwnd)
     {
       if (SUCCEEDED(js_device->SetDataFormat(&c_dfDIJoystick)))
       {
-        HRESULT hr = js_device->SetCooperativeLevel(GetAncestor(hwnd, GA_ROOT),
-                                                    DISCL_BACKGROUND | DISCL_EXCLUSIVE);
-        if (FAILED(hr))
+        if (FAILED(js_device->SetCooperativeLevel(GetAncestor(hwnd, GA_ROOT),
+                                                  DISCL_BACKGROUND | DISCL_EXCLUSIVE)))
         {
-          WARN_LOG_FMT(CONTROLLERINTERFACE,
-                       "DInput: Failed to acquire device exclusively. Force feedback will be "
-                       "unavailable.  {}",
-                       Common::HRWrap(hr));
+          WARN_LOG_FMT(
+              CONTROLLERINTERFACE,
+              "DInput: Failed to acquire device exclusively. Force feedback will be unavailable.");
           // Fall back to non-exclusive mode, with no rumble
           if (FAILED(
                   js_device->SetCooperativeLevel(nullptr, DISCL_BACKGROUND | DISCL_NONEXCLUSIVE)))
@@ -180,6 +176,9 @@ Joystick::Joystick(const LPDIRECTINPUTDEVICE8 device) : m_device(device)
                       [](const auto& pdidoi) { return (pdidoi.dwFlags & DIDOI_FFACTUATOR) != 0; });
     InitForceFeedback(m_device, num_ff_axes);
   }
+
+  // Zero inputs:
+  m_state_in = {};
 
   // Set hats to center:
   // "The center position is normally reported as -1" -MSDN

@@ -4,6 +4,7 @@
 #include "Core/HW/GCMemcard/GCMemcard.h"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cstring>
 #include <utility>
 #include <vector>
@@ -112,7 +113,7 @@ std::pair<GCMemcardErrorCode, std::optional<GCMemcard>> GCMemcard::Open(std::str
 
   // read the entire card into memory
   GCMemcard card;
-  file.Seek(0, File::SeekOrigin::Begin);
+  file.Seek(0, SEEK_SET);
   if (!file.ReadBytes(&card.m_header_block, BLOCK_SIZE) ||
       !file.ReadBytes(&card.m_directory_blocks[0], BLOCK_SIZE) ||
       !file.ReadBytes(&card.m_directory_blocks[1], BLOCK_SIZE) ||
@@ -310,7 +311,7 @@ bool GCMemcard::IsShiftJIS() const
 bool GCMemcard::Save()
 {
   File::IOFile mcdFile(m_filename, "wb");
-  mcdFile.Seek(0, File::SeekOrigin::Begin);
+  mcdFile.Seek(0, SEEK_SET);
 
   mcdFile.WriteBytes(&m_header_block, BLOCK_SIZE);
   mcdFile.WriteBytes(&m_directory_blocks[0], BLOCK_SIZE);

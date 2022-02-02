@@ -4,7 +4,6 @@
 #include "Core/GeckoCodeConfig.h"
 
 #include <algorithm>
-#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -177,10 +176,8 @@ std::vector<GeckoCode> LoadCodes(const IniFile& globalIni, const IniFile& localI
       {
         GeckoCode::Code new_code;
         // TODO: support options
-        if (std::optional<GeckoCode::Code> code = DeserializeLine(line))
-          new_code = *code;
-        else
-          new_code.original_line = line;
+        new_code.original_line = line;
+        ss >> std::hex >> new_code.address >> new_code.data;
         gcode.codes.push_back(new_code);
       }
       break;
@@ -254,23 +251,4 @@ void SaveCodes(IniFile& inifile, const std::vector<GeckoCode>& gcodes)
   inifile.SetLines("Gecko_Enabled", enabled_lines);
   inifile.SetLines("Gecko_Disabled", disabled_lines);
 }
-
-std::optional<GeckoCode::Code> DeserializeLine(const std::string& line)
-{
-  std::vector<std::string> items = SplitString(line, ' ');
-
-  GeckoCode::Code code;
-  code.original_line = line;
-
-  if (items.size() < 2)
-    return std::nullopt;
-
-  if (!TryParse(items[0], &code.address, 16))
-    return std::nullopt;
-  if (!TryParse(items[1], &code.data, 16))
-    return std::nullopt;
-
-  return code;
-}
-
 }  // namespace Gecko

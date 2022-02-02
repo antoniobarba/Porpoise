@@ -94,7 +94,7 @@ void CameraLogic::Update(const Common::Matrix44& transform, Common::Vec2 field_o
   struct CameraPoint
   {
     IRBasic::IRObject position;
-    u8 size = 0;
+    u8 size;
   };
 
   std::array<CameraPoint, leds.size()> camera_points;

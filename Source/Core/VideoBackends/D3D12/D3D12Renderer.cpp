@@ -1,13 +1,12 @@
 // Copyright 2019 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoBackends/D3D12/D3D12Renderer.h"
-
 #include "Common/Logging/Log.h"
 
 #include "VideoBackends/D3D12/Common.h"
 #include "VideoBackends/D3D12/D3D12BoundingBox.h"
 #include "VideoBackends/D3D12/D3D12PerfQuery.h"
+#include "VideoBackends/D3D12/D3D12Renderer.h"
 #include "VideoBackends/D3D12/D3D12SwapChain.h"
 #include "VideoBackends/D3D12/DX12Context.h"
 #include "VideoBackends/D3D12/DX12Pipeline.h"
@@ -47,11 +46,17 @@ bool Renderer::Initialize()
   if (!::Renderer::Initialize())
     return false;
 
+  m_bounding_box = BoundingBox::Create();
+  if (!m_bounding_box)
+    return false;
+
+  SetPixelShaderUAV(m_bounding_box->GetGPUDescriptor().cpu_handle);
   return true;
 }
 
 void Renderer::Shutdown()
 {
+  m_bounding_box.reset();
   m_swap_chain.reset();
 
   ::Renderer::Shutdown();
@@ -102,9 +107,20 @@ std::unique_ptr<AbstractPipeline> Renderer::CreatePipeline(const AbstractPipelin
   return DXPipeline::Create(config, cache_data, cache_data_length);
 }
 
-std::unique_ptr<BoundingBox> Renderer::CreateBoundingBox() const
+u16 Renderer::BBoxReadImpl(int index)
 {
-  return std::make_unique<D3D12BoundingBox>();
+  return static_cast<u16>(m_bounding_box->Get(index));
+}
+
+void Renderer::BBoxWriteImpl(int index, u16 value)
+{
+  m_bounding_box->Set(index, value);
+}
+
+void Renderer::BBoxFlushImpl()
+{
+  m_bounding_box->Flush();
+  m_bounding_box->Invalidate();
 }
 
 void Renderer::Flush()

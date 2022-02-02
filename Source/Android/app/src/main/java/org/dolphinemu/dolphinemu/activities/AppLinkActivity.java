@@ -2,15 +2,19 @@
 
 package org.dolphinemu.dolphinemu.activities;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 
 import androidx.fragment.app.FragmentActivity;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import org.dolphinemu.dolphinemu.model.GameFile;
-import org.dolphinemu.dolphinemu.services.GameFileCacheManager;
+import org.dolphinemu.dolphinemu.services.GameFileCacheService;
 import org.dolphinemu.dolphinemu.ui.main.TvMainActivity;
 import org.dolphinemu.dolphinemu.utils.AfterDirectoryInitializationRunner;
 import org.dolphinemu.dolphinemu.utils.AppLinkHelper;
@@ -63,19 +67,27 @@ public class AppLinkActivity extends FragmentActivity
   private void initResources()
   {
     mAfterDirectoryInitializationRunner = new AfterDirectoryInitializationRunner();
-    mAfterDirectoryInitializationRunner.runWithLifecycle(this, true, () -> tryPlay(playAction));
+    mAfterDirectoryInitializationRunner.run(this, true, () -> tryPlay(playAction));
 
-    GameFileCacheManager.isLoading().observe(this, (isLoading) ->
+    IntentFilter gameFileCacheIntentFilter = new IntentFilter(GameFileCacheService.DONE_LOADING);
+
+    BroadcastReceiver gameFileCacheReceiver = new BroadcastReceiver()
     {
-      if (!isLoading && DirectoryInitialization.areDolphinDirectoriesReady())
+      @Override
+      public void onReceive(Context context, Intent intent)
       {
-        tryPlay(playAction);
+        if (DirectoryInitialization.areDolphinDirectoriesReady())
+        {
+          tryPlay(playAction);
+        }
       }
+    };
 
-    });
+    LocalBroadcastManager broadcastManager = LocalBroadcastManager.getInstance(this);
+    broadcastManager.registerReceiver(gameFileCacheReceiver, gameFileCacheIntentFilter);
 
     DirectoryInitialization.start(this);
-    GameFileCacheManager.startLoad(this);
+    GameFileCacheService.startLoad(this);
   }
 
   /**
@@ -94,11 +106,11 @@ public class AppLinkActivity extends FragmentActivity
     // TODO: This approach of getting the game from the game file cache without rescanning the
     //       library means that we can fail to launch games if the cache file has been deleted.
 
-    GameFile game = GameFileCacheManager.getGameFileByGameId(action.getGameId());
+    GameFile game = GameFileCacheService.getGameFileByGameId(action.getGameId());
 
     // If game == null and the load isn't done, wait for the next GameFileCacheService broadcast.
     // If game == null and the load is done, call play with a null game, making us exit in failure.
-    if (game != null || !GameFileCacheManager.isLoading().getValue())
+    if (game != null || !GameFileCacheService.isLoading())
     {
       play(action, game);
     }
@@ -123,7 +135,11 @@ public class AppLinkActivity extends FragmentActivity
 
   private void startGame(GameFile game)
   {
-    mAfterDirectoryInitializationRunner.cancel();
-    EmulationActivity.launch(this, GameFileCacheManager.findSecondDiscAndGetPaths(game), false);
+    if (mAfterDirectoryInitializationRunner != null)
+    {
+      mAfterDirectoryInitializationRunner.cancel();
+      mAfterDirectoryInitializationRunner = null;
+    }
+    EmulationActivity.launch(this, GameFileCacheService.findSecondDiscAndGetPaths(game));
   }
 }

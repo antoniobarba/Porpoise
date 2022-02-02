@@ -12,6 +12,7 @@
 #include "Core/HW/Memmap.h"
 
 #include "VideoCommon/CPMemory.h"
+#include "VideoCommon/DataReader.h"
 #include "VideoCommon/Fifo.h"
 #include "VideoCommon/GeometryShaderManager.h"
 #include "VideoCommon/PixelShaderManager.h"
@@ -25,10 +26,16 @@ static void XFMemWritten(u32 transferSize, u32 baseAddress)
   VertexShaderManager::InvalidateXFRange(baseAddress, baseAddress + transferSize);
 }
 
-static void XFRegWritten(u32 address, u32 value)
+static void XFRegWritten(int transferSize, u32 baseAddress, DataReader src)
 {
-  if (address >= XFMEM_REGISTERS_START && address < XFMEM_REGISTERS_END)
+  u32 address = baseAddress;
+  u32 dataIndex = 0;
+
+  while (transferSize > 0 && address < XFMEM_REGISTERS_END)
   {
+    u32 newValue = src.Peek<u32>(dataIndex * sizeof(u32));
+    u32 nextAddress = address + 1;
+
     switch (address)
     {
     case XFMEM_ERROR:
@@ -37,12 +44,12 @@ static void XFRegWritten(u32 address, u32 value)
     case XFMEM_STATE1:  // internal state 1
     case XFMEM_CLOCK:
     case XFMEM_SETGPMETRIC:
-      // Not implemented
+      nextAddress = 0x1007;
       break;
 
     case XFMEM_CLIPDISABLE:
     {
-      ClipDisable setting{.hex = value};
+      ClipDisable setting{.hex = newValue};
       if (setting.disable_clipping_detection)
         DolphinAnalytics::Instance().ReportGameQuirk(GameQuirk::SETS_XF_CLIPDISABLE_BIT_0);
       if (setting.disable_trivial_rejection)
@@ -56,7 +63,7 @@ static void XFRegWritten(u32 address, u32 value)
       break;
 
     case XFMEM_SETNUMCHAN:
-      if (xfmem.numChan.numColorChans != (value & 3))
+      if (xfmem.numChan.numColorChans != (newValue & 3))
         g_vertex_manager->Flush();
       VertexShaderManager::SetLightingConfigChanged();
       break;
@@ -65,7 +72,7 @@ static void XFRegWritten(u32 address, u32 value)
     case XFMEM_SETCHAN1_AMBCOLOR:
     {
       u8 chan = address - XFMEM_SETCHAN0_AMBCOLOR;
-      if (xfmem.ambColor[chan] != value)
+      if (xfmem.ambColor[chan] != newValue)
       {
         g_vertex_manager->Flush();
         VertexShaderManager::SetMaterialColorChanged(chan);
@@ -77,7 +84,7 @@ static void XFRegWritten(u32 address, u32 value)
     case XFMEM_SETCHAN1_MATCOLOR:
     {
       u8 chan = address - XFMEM_SETCHAN0_MATCOLOR;
-      if (xfmem.matColor[chan] != value)
+      if (xfmem.matColor[chan] != newValue)
       {
         g_vertex_manager->Flush();
         VertexShaderManager::SetMaterialColorChanged(chan + 2);
@@ -89,22 +96,22 @@ static void XFRegWritten(u32 address, u32 value)
     case XFMEM_SETCHAN1_COLOR:
     case XFMEM_SETCHAN0_ALPHA:  // Channel Alpha
     case XFMEM_SETCHAN1_ALPHA:
-      if (((u32*)&xfmem)[address] != (value & 0x7fff))
+      if (((u32*)&xfmem)[address] != (newValue & 0x7fff))
         g_vertex_manager->Flush();
       VertexShaderManager::SetLightingConfigChanged();
       break;
 
     case XFMEM_DUALTEX:
-      if (xfmem.dualTexTrans.enabled != bool(value & 1))
+      if (xfmem.dualTexTrans.enabled != bool(newValue & 1))
         g_vertex_manager->Flush();
       VertexShaderManager::SetTexMatrixInfoChanged(-1);
       break;
 
     case XFMEM_SETMATRIXINDA:
-      VertexShaderManager::SetTexMatrixChangedA(value);
+      VertexShaderManager::SetTexMatrixChangedA(newValue);
       break;
     case XFMEM_SETMATRIXINDB:
-      VertexShaderManager::SetTexMatrixChangedB(value);
+      VertexShaderManager::SetTexMatrixChangedB(newValue);
       break;
 
     case XFMEM_SETVIEWPORT:
@@ -117,6 +124,8 @@ static void XFRegWritten(u32 address, u32 value)
       VertexShaderManager::SetViewportChanged();
       PixelShaderManager::SetViewportChanged();
       GeometryShaderManager::SetViewportChanged();
+
+      nextAddress = XFMEM_SETVIEWPORT + 6;
       break;
 
     case XFMEM_SETPROJECTION:
@@ -129,10 +138,12 @@ static void XFRegWritten(u32 address, u32 value)
       g_vertex_manager->Flush();
       VertexShaderManager::SetProjectionChanged();
       GeometryShaderManager::SetProjectionChanged();
+
+      nextAddress = XFMEM_SETPROJECTION + 7;
       break;
 
     case XFMEM_SETNUMTEXGENS:  // GXSetNumTexGens
-      if (xfmem.numTexGen.numTexGens != (value & 15))
+      if (xfmem.numTexGen.numTexGens != (newValue & 15))
         g_vertex_manager->Flush();
       break;
 
@@ -146,6 +157,8 @@ static void XFRegWritten(u32 address, u32 value)
     case XFMEM_SETTEXMTXINFO + 7:
       g_vertex_manager->Flush();
       VertexShaderManager::SetTexMatrixInfoChanged(address - XFMEM_SETTEXMTXINFO);
+
+      nextAddress = XFMEM_SETTEXMTXINFO + 8;
       break;
 
     case XFMEM_SETPOSTMTXINFO:
@@ -158,6 +171,8 @@ static void XFRegWritten(u32 address, u32 value)
     case XFMEM_SETPOSTMTXINFO + 7:
       g_vertex_manager->Flush();
       VertexShaderManager::SetTexMatrixInfoChanged(address - XFMEM_SETPOSTMTXINFO);
+
+      nextAddress = XFMEM_SETPOSTMTXINFO + 8;
       break;
 
     // --------------
@@ -174,7 +189,7 @@ static void XFRegWritten(u32 address, u32 value)
     case 0x104e:
     case 0x104f:
       DolphinAnalytics::Instance().ReportGameQuirk(GameQuirk::USES_UNKNOWN_XF_COMMAND);
-      DEBUG_LOG_FMT(VIDEO, "Possible Normal Mtx XF reg?: {:x}={:x}", address, value);
+      DEBUG_LOG_FMT(VIDEO, "Possible Normal Mtx XF reg?: {:x}={:x}", address, newValue);
       break;
 
     case 0x1013:
@@ -185,69 +200,83 @@ static void XFRegWritten(u32 address, u32 value)
 
     default:
       DolphinAnalytics::Instance().ReportGameQuirk(GameQuirk::USES_UNKNOWN_XF_COMMAND);
-      WARN_LOG_FMT(VIDEO, "Unknown XF Reg: {:x}={:x}", address, value);
+      WARN_LOG_FMT(VIDEO, "Unknown XF Reg: {:x}={:x}", address, newValue);
       break;
     }
+
+    int transferred = nextAddress - address;
+    address = nextAddress;
+
+    transferSize -= transferred;
+    dataIndex += transferred;
   }
 }
 
-void LoadXFReg(u16 base_address, u8 transfer_size, const u8* data)
+void LoadXFReg(u32 transferSize, u32 baseAddress, DataReader src)
 {
-  if (base_address > XFMEM_REGISTERS_END)
-  {
-    WARN_LOG_FMT(VIDEO, "XF load base address past end of address space: {:x} {} bytes",
-                 base_address, transfer_size);
-    return;
-  }
-
-  u32 end_address = base_address + transfer_size;  // exclusive
-
   // do not allow writes past registers
-  if (end_address > XFMEM_REGISTERS_END)
+  if (baseAddress + transferSize > XFMEM_REGISTERS_END)
   {
-    WARN_LOG_FMT(VIDEO, "XF load ends past end of address space: {:x} {} bytes", base_address,
-                 transfer_size);
-    end_address = XFMEM_REGISTERS_END;
+    WARN_LOG_FMT(VIDEO, "XF load exceeds address space: {:x} {} bytes", baseAddress, transferSize);
+    DolphinAnalytics::Instance().ReportGameQuirk(GameQuirk::USES_UNKNOWN_XF_COMMAND);
+
+    if (baseAddress >= XFMEM_REGISTERS_END)
+      transferSize = 0;
+    else
+      transferSize = XFMEM_REGISTERS_END - baseAddress;
   }
 
   // write to XF mem
-  if (base_address < XFMEM_REGISTERS_START)
+  if (baseAddress < XFMEM_REGISTERS_START && transferSize > 0)
   {
-    const u32 xf_mem_base = base_address;
-    u32 xf_mem_transfer_size = transfer_size;
+    u32 end = baseAddress + transferSize;
 
-    if (end_address > XFMEM_REGISTERS_START)
+    u32 xfMemBase = baseAddress;
+    u32 xfMemTransferSize = transferSize;
+
+    if (end >= XFMEM_REGISTERS_START)
     {
-      xf_mem_transfer_size = XFMEM_REGISTERS_START - base_address;
-      base_address = XFMEM_REGISTERS_START;
+      xfMemTransferSize = XFMEM_REGISTERS_START - baseAddress;
+
+      baseAddress = XFMEM_REGISTERS_START;
+      transferSize = end - XFMEM_REGISTERS_START;
+    }
+    else
+    {
+      transferSize = 0;
     }
 
-    XFMemWritten(xf_mem_transfer_size, xf_mem_base);
-    for (u32 i = 0; i < xf_mem_transfer_size; i++)
+    XFMemWritten(xfMemTransferSize, xfMemBase);
+    for (u32 i = 0; i < xfMemTransferSize; i++)
     {
-      ((u32*)&xfmem)[xf_mem_base + i] = Common::swap32(data);
-      data += 4;
+      ((u32*)&xfmem)[xfMemBase + i] = src.Read<u32>();
     }
   }
 
   // write to XF regs
-  if (base_address >= XFMEM_REGISTERS_START)
+  if (transferSize > 0)
   {
-    for (u32 address = base_address; address < end_address; address++)
+    XFRegWritten(transferSize, baseAddress, src);
+    for (u32 i = 0; i < transferSize; i++)
     {
-      const u32 value = Common::swap32(data);
-
-      XFRegWritten(address, value);
-      ((u32*)&xfmem)[address] = value;
-
-      data += 4;
+      ((u32*)&xfmem)[baseAddress + i] = src.Read<u32>();
     }
   }
 }
 
-// TODO - verify that it is correct. Seems to work, though.
-void LoadIndexedXF(CPArray array, u32 index, u16 address, u8 size)
+constexpr std::tuple<u32, u32, u32> ExtractIndexedXF(u32 val)
 {
+  const u32 index = val >> 16;
+  const u32 address = val & 0xFFF;  // check mask
+  const u32 size = ((val >> 12) & 0xF) + 1;
+
+  return {index, address, size};
+}
+
+// TODO - verify that it is correct. Seems to work, though.
+void LoadIndexedXF(u32 val, int refarray)
+{
+  const auto [index, address, size] = ExtractIndexedXF(val);
   // load stuff from array to address in xf mem
 
   u32* currData = (u32*)(&xfmem) + address;
@@ -258,8 +287,8 @@ void LoadIndexedXF(CPArray array, u32 index, u16 address, u8 size)
   }
   else
   {
-    newData = (u32*)Memory::GetPointer(g_main_cp_state.array_bases[array] +
-                                       g_main_cp_state.array_strides[array] * index);
+    newData = (u32*)Memory::GetPointer(g_main_cp_state.array_bases[refarray] +
+                                       g_main_cp_state.array_strides[refarray] * index);
   }
   bool changed = false;
   for (u32 i = 0; i < size; ++i)
@@ -278,10 +307,12 @@ void LoadIndexedXF(CPArray array, u32 index, u16 address, u8 size)
   }
 }
 
-void PreprocessIndexedXF(CPArray array, u32 index, u16 address, u8 size)
+void PreprocessIndexedXF(u32 val, int refarray)
 {
-  const u8* new_data = Memory::GetPointer(g_preprocess_cp_state.array_bases[array] +
-                                          g_preprocess_cp_state.array_strides[array] * index);
+  const auto [index, address, size] = ExtractIndexedXF(val);
+
+  const u8* new_data = Memory::GetPointer(g_preprocess_cp_state.array_bases[refarray] +
+                                          g_preprocess_cp_state.array_strides[refarray] * index);
 
   const size_t buf_size = size * sizeof(u32);
   Fifo::PushFifoAuxBuffer(new_data, buf_size);
@@ -550,9 +581,13 @@ std::string GetXFMemDescription(u32 address, u32 value)
   }
 }
 
-std::pair<std::string, std::string> GetXFTransferInfo(u16 base_address, u8 transfer_size,
-                                                      const u8* data)
+std::pair<std::string, std::string> GetXFTransferInfo(const u8* data)
 {
+  const u32 cmd = Common::swap32(data);
+  data += 4;
+  u32 base_address = cmd & 0xFFFF;
+  const u32 transfer_size = ((cmd >> 16) & 15) + 1;
+
   if (base_address > XFMEM_REGISTERS_END)
   {
     return std::make_pair("Invalid XF Transfer", "Base address past end of address space");
@@ -571,8 +606,8 @@ std::pair<std::string, std::string> GetXFTransferInfo(u16 base_address, u8 trans
   // do not allow writes past registers
   if (end_address > XFMEM_REGISTERS_END)
   {
-    fmt::format_to(std::back_inserter(name), "Invalid XF Transfer ");
-    fmt::format_to(std::back_inserter(desc), "Transfer ends past end of address space\n\n");
+    fmt::format_to(name, "Invalid XF Transfer ");
+    fmt::format_to(desc, "Transfer ends past end of address space\n\n");
     end_address = XFMEM_REGISTERS_END;
   }
 
@@ -588,32 +623,30 @@ std::pair<std::string, std::string> GetXFTransferInfo(u16 base_address, u8 trans
       base_address = XFMEM_REGISTERS_START;
     }
 
-    fmt::format_to(std::back_inserter(name), "Write {} XF mem words at {:04x}",
-                   xf_mem_transfer_size, xf_mem_base);
+    fmt::format_to(name, "Write {} XF mem words at {:04x}", xf_mem_transfer_size, xf_mem_base);
 
     for (u32 i = 0; i < xf_mem_transfer_size; i++)
     {
       const auto mem_desc = GetXFMemDescription(xf_mem_base + i, Common::swap32(data));
-      fmt::format_to(std::back_inserter(desc), "{}{}", i != 0 ? "\n" : "", mem_desc);
+      fmt::format_to(desc, i == 0 ? "{}" : "\n{}", mem_desc);
       data += 4;
     }
 
     if (end_address > XFMEM_REGISTERS_START)
-      fmt::format_to(std::back_inserter(name), "; ");
+      fmt::format_to(name, "; ");
   }
 
   // write to XF regs
   if (base_address >= XFMEM_REGISTERS_START)
   {
-    fmt::format_to(std::back_inserter(name), "Write {} XF regs at {:04x}",
-                   end_address - base_address, base_address);
+    fmt::format_to(name, "Write {} XF regs at {:04x}", end_address - base_address, base_address);
 
     for (u32 address = base_address; address < end_address; address++)
     {
       const u32 value = Common::swap32(data);
 
       const auto [regname, regdesc] = GetXFRegInfo(address, value);
-      fmt::format_to(std::back_inserter(desc), "{}\n{}\n", regname, regdesc);
+      fmt::format_to(desc, "{}\n{}\n", regname, regdesc);
 
       data += 4;
     }
@@ -622,15 +655,16 @@ std::pair<std::string, std::string> GetXFTransferInfo(u16 base_address, u8 trans
   return std::make_pair(fmt::to_string(name), fmt::to_string(desc));
 }
 
-std::pair<std::string, std::string> GetXFIndexedLoadInfo(CPArray array, u32 index, u16 address,
-                                                         u8 size)
+std::pair<std::string, std::string> GetXFIndexedLoadInfo(u8 array, u32 value)
 {
+  const auto [index, address, size] = ExtractIndexedXF(value);
+
   const auto desc = fmt::format("Load {} bytes to XF address {:03x} from CP array {} row {}", size,
                                 address, array, index);
   fmt::memory_buffer written;
   for (u32 i = 0; i < size; i++)
   {
-    fmt::format_to(std::back_inserter(written), "{}\n", GetXFMemName(address + i));
+    fmt::format_to(written, "{}\n", GetXFMemName(address + i));
   }
 
   return std::make_pair(desc, fmt::to_string(written));

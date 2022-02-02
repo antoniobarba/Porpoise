@@ -154,6 +154,7 @@
             android:textAllCaps="false"
             android:textColor="?attr/colorOnGradientPrimary" />
 
+<<<<<<< HEAD
         <Button
             android:id="@+id/properties_start_with_riivolution"
             style="@style/Widget.AppCompat.Button.Colored"
@@ -165,6 +166,8 @@
             android:textAllCaps="false"
             android:textColor="?attr/colorOnGradientPrimary" />
 
+=======
+>>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
     </LinearLayout>
 
 </RelativeLayout>

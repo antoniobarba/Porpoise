@@ -3,8 +3,6 @@
 
 #pragma once
 
-#include <array>
-
 #include "Core/HW/GCPad.h"
 #include "Core/HW/SI/SI_Device.h"
 #include "InputCommon/GCPadStatus.h"
@@ -54,7 +52,6 @@ protected:
 public:
   // Constructor
   CSIDevice_GCController(SIDevices device, int device_number);
-  ~CSIDevice_GCController() override;
 
   // Run the SI Buffer
   int RunBuffer(u8* buffer, int request_length) override;
@@ -77,18 +74,12 @@ public:
   static int NetPlay_InGamePadToLocalPad(int pad_num);
 
   // Direct rumble to the right GC Controller
-  static void Rumble(int pad_num, ControlState strength, SIDevices device);
+  static void Rumble(int pad_num, ControlState strength);
 
   static void HandleMoviePadStatus(int device_number, GCPadStatus* pad_status);
 
 protected:
   void SetOrigin(const GCPadStatus& pad_status);
-
-private:
-  void RefreshConfig();
-
-  std::array<SIDevices, 4> m_config_si_devices{};
-  size_t m_config_changed_callback_id;
 };
 
 // "TaruKonga", the DK Bongo controller

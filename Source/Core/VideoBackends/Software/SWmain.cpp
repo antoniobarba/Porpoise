@@ -1,8 +1,6 @@
 // Copyright 2009 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "VideoBackends/Software/VideoBackend.h"
-
 #include <cstring>
 #include <memory>
 #include <string>
@@ -22,6 +20,7 @@
 #include "VideoBackends/Software/SWTexture.h"
 #include "VideoBackends/Software/SWVertexLoader.h"
 #include "VideoBackends/Software/TextureCache.h"
+#include "VideoBackends/Software/VideoBackend.h"
 
 #include "VideoCommon/FramebufferManager.h"
 #include "VideoCommon/TextureCacheBase.h"
@@ -84,11 +83,14 @@ void VideoSoftware::InitBackendInfo()
   g_Config.backend_info.bSupportsLogicOp = true;
   g_Config.backend_info.bSupportsShaderBinaries = false;
   g_Config.backend_info.bSupportsPipelineCacheData = false;
+<<<<<<< HEAD
   g_Config.backend_info.bSupportsBBox = true;
   g_Config.backend_info.bSupportsCoarseDerivatives = false;
   g_Config.backend_info.bSupportsTextureQueryLevels = false;
   g_Config.backend_info.bSupportsLodBiasInSampler = false;
   g_Config.backend_info.bSupportsSettingObjectNames = false;
+=======
+>>>>>>> parent of 15baba84ef (Update Source Code from Dolphin Official 5.0-15966)
 
   // aamodes
   g_Config.backend_info.AAModes = {1};

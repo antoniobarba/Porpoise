@@ -3,7 +3,6 @@
 
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <cstdio>
 #include <string>
@@ -13,13 +12,6 @@
 
 namespace File
 {
-enum class SeekOrigin
-{
-  Begin,
-  Current,
-  End,
-};
-
 // simple wrapper for cstdlib file functions to
 // hopefully will make error checking easier
 // and make forgetting an fclose() harder
@@ -65,18 +57,6 @@ public:
     return m_good;
   }
 
-  template <typename T, std::size_t N>
-  bool ReadArray(std::array<T, N>* elements, size_t* num_read = nullptr)
-  {
-    return ReadArray(elements->data(), elements->size(), num_read);
-  }
-
-  template <typename T, std::size_t N>
-  bool WriteArray(const std::array<T, N>& elements)
-  {
-    return WriteArray(elements.data(), elements.size());
-  }
-
   bool ReadBytes(void* data, size_t length)
   {
     return ReadArray(reinterpret_cast<char*>(data), length);
@@ -96,14 +76,14 @@ public:
   std::FILE* GetHandle() { return m_file; }
   void SetHandle(std::FILE* file);
 
-  bool Seek(s64 offset, SeekOrigin origin);
+  bool Seek(s64 off, int origin);
   u64 Tell() const;
   u64 GetSize() const;
   bool Resize(u64 size);
   bool Flush();
 
   // clear error state
-  void ClearError()
+  void Clear()
   {
     m_good = true;
     std::clearerr(m_file);

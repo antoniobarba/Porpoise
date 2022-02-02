@@ -116,11 +116,10 @@ public:
   void ClearCRFieldBit(int field, int bit);
   void SetCRFieldBit(int field, int bit);
   void FixGTBeforeSettingCRFieldBit(Gen::X64Reg reg);
+
   // Generates a branch that will check if a given bit of a CR register part
   // is set or not.
   Gen::FixupBranch JumpIfCRFieldBit(int field, int bit, bool jump_if_set = true);
-
-  void UpdateFPExceptionSummary(Gen::X64Reg fpscr, Gen::X64Reg tmp1, Gen::X64Reg tmp2);
 
   void SetFPRFIfNeeded(const Gen::OpArg& xmm, bool single);
   void FinalizeSingleResult(Gen::X64Reg output, const Gen::OpArg& input, bool packed = true,
@@ -151,6 +150,7 @@ public:
   void DynaRunTable63(UGeckoInstruction inst);
 
   void addx(UGeckoInstruction inst);
+  void arithcx(UGeckoInstruction inst);
   void mulli(UGeckoInstruction inst);
   void mulhwXx(UGeckoInstruction inst);
   void mullwx(UGeckoInstruction inst);
@@ -265,9 +265,9 @@ private:
 
   Jit64AsmRoutineManager asm_routines{*this};
 
-  bool m_enable_blr_optimization = false;
-  bool m_cleanup_after_stackfault = false;
-  u8* m_stack = nullptr;
+  bool m_enable_blr_optimization;
+  bool m_cleanup_after_stackfault;
+  u8* m_stack;
 
   HyoutaUtilities::RangeSizeSet<u8*> m_free_ranges_near;
   HyoutaUtilities::RangeSizeSet<u8*> m_free_ranges_far;

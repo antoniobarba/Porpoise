@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cinttypes>
 #include <cmath>
 #include <cstring>
 #include <memory>
@@ -264,9 +265,19 @@ void Renderer::UnbindTexture(const AbstractTexture* texture)
     D3D::stateman->ApplyTextures();
 }
 
-std::unique_ptr<BoundingBox> Renderer::CreateBoundingBox() const
+u16 Renderer::BBoxReadImpl(int index)
 {
-  return std::make_unique<D3DBoundingBox>();
+  return static_cast<u16>(BBox::Get(index));
+}
+
+void Renderer::BBoxWriteImpl(int index, u16 value)
+{
+  BBox::Set(index, value);
+}
+
+void Renderer::BBoxFlushImpl()
+{
+  BBox::Flush();
 }
 
 void Renderer::Flush()

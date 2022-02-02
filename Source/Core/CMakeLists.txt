@@ -11,10 +11,6 @@ if(ENABLE_NOGUI)
   add_subdirectory(DolphinNoGUI)
 endif()
 
-if(ENABLE_CLI_TOOL)
-  add_subdirectory(DolphinTool)
-endif()
-
 if(ENABLE_QT)
   add_subdirectory(DolphinQt)
 endif()
@@ -26,6 +22,7 @@ endif()
 if (APPLE)
   add_subdirectory(MacUpdater)
 endif()
+
 
 if (WIN32)
   add_subdirectory(WinUpdater)

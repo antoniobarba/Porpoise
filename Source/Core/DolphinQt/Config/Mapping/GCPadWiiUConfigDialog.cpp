@@ -8,7 +8,6 @@
 #include <QLabel>
 #include <QVBoxLayout>
 
-#include "Core/Config/MainSettings.h"
 #include "Core/ConfigManager.h"
 #include "DolphinQt/QtUtils/QueueOnObject.h"
 
@@ -87,12 +86,12 @@ void GCPadWiiUConfigDialog::UpdateAdapterStatus()
 
 void GCPadWiiUConfigDialog::LoadSettings()
 {
-  m_rumble->setChecked(Config::Get(Config::GetInfoForAdapterRumble(m_port)));
-  m_simulate_bongos->setChecked(Config::Get(Config::GetInfoForSimulateKonga(m_port)));
+  m_rumble->setChecked(SConfig::GetInstance().m_AdapterRumble[m_port]);
+  m_simulate_bongos->setChecked(SConfig::GetInstance().m_AdapterKonga[m_port]);
 }
 
 void GCPadWiiUConfigDialog::SaveSettings()
 {
-  Config::SetBaseOrCurrent(Config::GetInfoForAdapterRumble(m_port), m_rumble->isChecked());
-  Config::SetBaseOrCurrent(Config::GetInfoForSimulateKonga(m_port), m_simulate_bongos->isChecked());
+  SConfig::GetInstance().m_AdapterRumble[m_port] = m_rumble->isChecked();
+  SConfig::GetInstance().m_AdapterKonga[m_port] = m_simulate_bongos->isChecked();
 }

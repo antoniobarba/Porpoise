@@ -6,7 +6,6 @@
 #include "Common/BitUtils.h"
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
-#include "Core/PowerPC/Interpreter/ExceptionUtils.h"
 #include "Core/PowerPC/PowerPC.h"
 
 void Interpreter::Helper_UpdateCR0(u32 value)
@@ -132,7 +131,7 @@ void Interpreter::twi(UGeckoInstruction inst)
   if ((a < b && (TO & 0x10) != 0) || (a > b && (TO & 0x08) != 0) || (a == b && (TO & 0x04) != 0) ||
       (u32(a) < u32(b) && (TO & 0x02) != 0) || (u32(a) > u32(b) && (TO & 0x01) != 0))
   {
-    GenerateProgramException(ProgramExceptionCause::Trap);
+    PowerPC::ppcState.Exceptions |= EXCEPTION_PROGRAM;
     PowerPC::CheckExceptions();
     m_end_block = true;  // Dunno about this
   }
@@ -340,7 +339,7 @@ void Interpreter::tw(UGeckoInstruction inst)
   if ((a < b && (TO & 0x10) != 0) || (a > b && (TO & 0x08) != 0) || (a == b && (TO & 0x04) != 0) ||
       ((u32(a) < u32(b)) && (TO & 0x02) != 0) || ((u32(a) > u32(b)) && (TO & 0x01) != 0))
   {
-    GenerateProgramException(ProgramExceptionCause::Trap);
+    PowerPC::ppcState.Exceptions |= EXCEPTION_PROGRAM;
     PowerPC::CheckExceptions();
     m_end_block = true;  // Dunno about this
   }

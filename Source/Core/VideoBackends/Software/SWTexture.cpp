@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "VideoBackends/Software/SWTexture.h"
+#include "VideoBackends/Software/SWRenderer.h"
 
 #include <cstring>
-
 #include "Common/Assert.h"
 
 #include "VideoBackends/Software/CopyRegion.h"
-#include "VideoBackends/Software/SWRenderer.h"
 
 namespace SW
 {

@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "Core/HW/SI/SI_DeviceNull.h"
+#include "Common/Swap.h"
+
+#include <cstring>
 
 namespace SerialInterface
 {

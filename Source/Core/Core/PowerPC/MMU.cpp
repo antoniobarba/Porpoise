@@ -3,6 +3,7 @@
 
 #include "Core/PowerPC/MMU.h"
 
+#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <string>
@@ -18,12 +19,14 @@
 #include "Core/HW/MMIO.h"
 #include "Core/HW/Memmap.h"
 #include "Core/HW/ProcessorInterface.h"
-#include "Core/PowerPC/GDBStub.h"
 #include "Core/PowerPC/JitInterface.h"
 #include "Core/PowerPC/PowerPC.h"
-#include "Core/System.h"
 
 #include "VideoCommon/VideoBackendBase.h"
+
+#ifdef USE_GDBSTUB
+#include "Core/PowerPC/GDBStub.h"
+#endif
 
 namespace PowerPC
 {
@@ -466,35 +469,34 @@ u32 HostRead_Instruction(const u32 address)
   return ReadFromHardware<XCheckTLBFlag::OpcodeNoException, u32>(address);
 }
 
-std::optional<ReadResult<u32>> HostTryReadInstruction(const u32 address,
-                                                      RequestedAddressSpace space)
+TryReadResult<u32> HostTryReadInstruction(const u32 address, RequestedAddressSpace space)
 {
   if (!HostIsInstructionRAMAddress(address, space))
-    return std::nullopt;
+    return TryReadResult<u32>();
 
   switch (space)
   {
   case RequestedAddressSpace::Effective:
   {
     const u32 value = ReadFromHardware<XCheckTLBFlag::OpcodeNoException, u32>(address);
-    return ReadResult<u32>(!!MSR.DR, value);
+    return TryReadResult<u32>(!!MSR.DR, value);
   }
   case RequestedAddressSpace::Physical:
   {
     const u32 value = ReadFromHardware<XCheckTLBFlag::OpcodeNoException, u32, true>(address);
-    return ReadResult<u32>(false, value);
+    return TryReadResult<u32>(false, value);
   }
   case RequestedAddressSpace::Virtual:
   {
     if (!MSR.DR)
-      return std::nullopt;
+      return TryReadResult<u32>();
     const u32 value = ReadFromHardware<XCheckTLBFlag::OpcodeNoException, u32>(address);
-    return ReadResult<u32>(true, value);
+    return TryReadResult<u32>(true, value);
   }
   }
 
-  ASSERT(0);
-  return std::nullopt;
+  assert(0);
+  return TryReadResult<u32>();
 }
 
 static void Memcheck(u32 address, u64 var, bool write, size_t size)
@@ -519,9 +521,6 @@ static void Memcheck(u32 address, u64 var, bool write, size_t size)
     return;
 
   CPU::Break();
-
-  if (GDBStub::IsActive())
-    GDBStub::TakeControl();
 
   // Fake a DSI so that all the code that tests for it in order to skip
   // the rest of the instruction will apply.  (This means that
@@ -576,70 +575,70 @@ float Read_F32(const u32 address)
 }
 
 template <typename T>
-static std::optional<ReadResult<T>> HostTryReadUX(const u32 address, RequestedAddressSpace space)
+static TryReadResult<T> HostTryReadUX(const u32 address, RequestedAddressSpace space)
 {
   if (!HostIsRAMAddress(address, space))
-    return std::nullopt;
+    return TryReadResult<T>();
 
   switch (space)
   {
   case RequestedAddressSpace::Effective:
   {
     T value = ReadFromHardware<XCheckTLBFlag::NoException, T>(address);
-    return ReadResult<T>(!!MSR.DR, std::move(value));
+    return TryReadResult<T>(!!MSR.DR, std::move(value));
   }
   case RequestedAddressSpace::Physical:
   {
     T value = ReadFromHardware<XCheckTLBFlag::NoException, T, true>(address);
-    return ReadResult<T>(false, std::move(value));
+    return TryReadResult<T>(false, std::move(value));
   }
   case RequestedAddressSpace::Virtual:
   {
     if (!MSR.DR)
-      return std::nullopt;
+      return TryReadResult<T>();
     T value = ReadFromHardware<XCheckTLBFlag::NoException, T>(address);
-    return ReadResult<T>(true, std::move(value));
+    return TryReadResult<T>(true, std::move(value));
   }
   }
 
-  ASSERT(0);
-  return std::nullopt;
+  assert(0);
+  return TryReadResult<T>();
 }
 
-std::optional<ReadResult<u8>> HostTryReadU8(u32 address, RequestedAddressSpace space)
+TryReadResult<u8> HostTryReadU8(u32 address, RequestedAddressSpace space)
 {
   return HostTryReadUX<u8>(address, space);
 }
 
-std::optional<ReadResult<u16>> HostTryReadU16(u32 address, RequestedAddressSpace space)
+TryReadResult<u16> HostTryReadU16(u32 address, RequestedAddressSpace space)
 {
   return HostTryReadUX<u16>(address, space);
 }
 
-std::optional<ReadResult<u32>> HostTryReadU32(u32 address, RequestedAddressSpace space)
+TryReadResult<u32> HostTryReadU32(u32 address, RequestedAddressSpace space)
 {
   return HostTryReadUX<u32>(address, space);
 }
 
-std::optional<ReadResult<u64>> HostTryReadU64(u32 address, RequestedAddressSpace space)
+TryReadResult<u64> HostTryReadU64(u32 address, RequestedAddressSpace space)
 {
   return HostTryReadUX<u64>(address, space);
 }
 
-std::optional<ReadResult<float>> HostTryReadF32(u32 address, RequestedAddressSpace space)
+TryReadResult<float> HostTryReadF32(u32 address, RequestedAddressSpace space)
 {
   const auto result = HostTryReadUX<u32>(address, space);
   if (!result)
-    return std::nullopt;
-  return ReadResult<float>(result->translated, Common::BitCast<float>(result->value));
+    return TryReadResult<float>();
+  return TryReadResult<float>(result.translated, Common::BitCast<float>(result.value));
 }
 
-std::optional<ReadResult<double>> HostTryReadF64(u32 address, RequestedAddressSpace space)
+TryReadResult<double> HostTryReadF64(u32 address, RequestedAddressSpace space)
 {
   const auto result = HostTryReadUX<u64>(address, space);
   if (!result)
-    return std::nullopt;
-  return ReadResult<double>(result->translated, Common::BitCast<double>(result->value));
+    return TryReadResult<double>();
+  return TryReadResult<double>(result.translated, Common::BitCast<double>(result.value));
 }
 
 u32 Read_U8_ZX(const u32 address)
@@ -765,68 +764,62 @@ void HostWrite_F64(const double var, const u32 address)
   HostWrite_U64(integral, address);
 }
 
-static std::optional<WriteResult> HostTryWriteUX(const u32 var, const u32 address, const u32 size,
-                                                 RequestedAddressSpace space)
+static TryWriteResult HostTryWriteUX(const u32 var, const u32 address, const u32 size,
+                                     RequestedAddressSpace space)
 {
   if (!HostIsRAMAddress(address, space))
-    return std::nullopt;
+    return TryWriteResult();
 
   switch (space)
   {
   case RequestedAddressSpace::Effective:
     WriteToHardware<XCheckTLBFlag::NoException>(address, var, size);
-    return WriteResult(!!MSR.DR);
+    return TryWriteResult(!!MSR.DR);
   case RequestedAddressSpace::Physical:
     WriteToHardware<XCheckTLBFlag::NoException, true>(address, var, size);
-    return WriteResult(false);
+    return TryWriteResult(false);
   case RequestedAddressSpace::Virtual:
     if (!MSR.DR)
-      return std::nullopt;
+      return TryWriteResult();
     WriteToHardware<XCheckTLBFlag::NoException>(address, var, size);
-    return WriteResult(true);
+    return TryWriteResult(true);
   }
 
-  ASSERT(0);
-  return std::nullopt;
+  assert(0);
+  return TryWriteResult();
 }
 
-std::optional<WriteResult> HostTryWriteU8(const u32 var, const u32 address,
-                                          RequestedAddressSpace space)
+TryWriteResult HostTryWriteU8(const u32 var, const u32 address, RequestedAddressSpace space)
 {
   return HostTryWriteUX(var, address, 1, space);
 }
 
-std::optional<WriteResult> HostTryWriteU16(const u32 var, const u32 address,
-                                           RequestedAddressSpace space)
+TryWriteResult HostTryWriteU16(const u32 var, const u32 address, RequestedAddressSpace space)
 {
   return HostTryWriteUX(var, address, 2, space);
 }
 
-std::optional<WriteResult> HostTryWriteU32(const u32 var, const u32 address,
-                                           RequestedAddressSpace space)
+TryWriteResult HostTryWriteU32(const u32 var, const u32 address, RequestedAddressSpace space)
 {
   return HostTryWriteUX(var, address, 4, space);
 }
 
-std::optional<WriteResult> HostTryWriteU64(const u64 var, const u32 address,
-                                           RequestedAddressSpace space)
+TryWriteResult HostTryWriteU64(const u64 var, const u32 address, RequestedAddressSpace space)
 {
-  const auto result = HostTryWriteUX(static_cast<u32>(var >> 32), address, 4, space);
+  const TryWriteResult result = HostTryWriteUX(static_cast<u32>(var >> 32), address, 4, space);
   if (!result)
     return result;
 
   return HostTryWriteUX(static_cast<u32>(var), address + 4, 4, space);
 }
 
-std::optional<WriteResult> HostTryWriteF32(const float var, const u32 address,
-                                           RequestedAddressSpace space)
+TryWriteResult HostTryWriteF32(const float var, const u32 address, RequestedAddressSpace space)
 {
   const u32 integral = Common::BitCast<u32>(var);
   return HostTryWriteU32(integral, address, space);
 }
 
-std::optional<WriteResult> HostTryWriteF64(const double var, const u32 address,
-                                           RequestedAddressSpace space)
+TryWriteResult HostTryWriteF64(const double var, const u32 address, RequestedAddressSpace space)
 {
   const u64 integral = Common::BitCast<u64>(var);
   return HostTryWriteU64(integral, address, space);
@@ -848,26 +841,25 @@ std::string HostGetString(u32 address, size_t size)
   return s;
 }
 
-std::optional<ReadResult<std::string>> HostTryReadString(u32 address, size_t size,
-                                                         RequestedAddressSpace space)
+TryReadResult<std::string> HostTryReadString(u32 address, size_t size, RequestedAddressSpace space)
 {
   auto c = HostTryReadU8(address, space);
   if (!c)
-    return std::nullopt;
-  if (c->value == 0)
-    return ReadResult<std::string>(c->translated, "");
+    return TryReadResult<std::string>();
+  if (c.value == 0)
+    return TryReadResult<std::string>(c.translated, "");
 
   std::string s;
-  s += static_cast<char>(c->value);
+  s += static_cast<char>(c.value);
   while (size == 0 || s.length() < size)
   {
     ++address;
     const auto res = HostTryReadU8(address, space);
-    if (!res || res->value == 0)
+    if (!res || res.value == 0)
       break;
-    s += static_cast<char>(res->value);
+    s += static_cast<char>(res.value);
   }
-  return ReadResult<std::string>(c->translated, std::move(s));
+  return TryReadResult<std::string>(c.translated, std::move(s));
 }
 
 bool IsOptimizableRAMAddress(const u32 address)
@@ -933,7 +925,7 @@ bool HostIsRAMAddress(u32 address, RequestedAddressSpace space)
     return IsRAMAddress<XCheckTLBFlag::NoException>(address, true);
   }
 
-  ASSERT(0);
+  assert(0);
   return false;
 }
 
@@ -955,7 +947,7 @@ bool HostIsInstructionRAMAddress(u32 address, RequestedAddressSpace space)
     return IsRAMAddress<XCheckTLBFlag::OpcodeNoException>(address, true);
   }
 
-  ASSERT(0);
+  assert(0);
   return false;
 }
 
@@ -1148,7 +1140,7 @@ TranslateResult JitCache_TranslateAddress(u32 address)
 static void GenerateDSIException(u32 effective_address, bool write)
 {
   // DSI exceptions are only supported in MMU mode.
-  if (!Core::System::GetInstance().IsMMUMode())
+  if (!SConfig::GetInstance().bMMU)
   {
     PanicAlertFmt("Invalid {} {:#010x}, PC = {:#010x}", write ? "write to" : "read from",
                   effective_address, PC);

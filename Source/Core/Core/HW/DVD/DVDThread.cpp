@@ -37,26 +37,26 @@ namespace DVDThread
 {
 struct ReadRequest
 {
-  bool copy_to_ram = false;
-  u32 output_address = 0;
-  u64 dvd_offset = 0;
-  u32 length = 0;
-  DiscIO::Partition partition{};
+  bool copy_to_ram;
+  u32 output_address;
+  u64 dvd_offset;
+  u32 length;
+  DiscIO::Partition partition;
 
   // This determines which code DVDInterface will run to reply
   // to the emulated software. We can't use callbacks,
   // because function pointers can't be stored in savestates.
-  DVDInterface::ReplyType reply_type = DVDInterface::ReplyType::NoReply;
+  DVDInterface::ReplyType reply_type;
 
   // IDs are used to uniquely identify a request. They must not be
   // identical to IDs of any other requests that currently exist, but
   // it's fine to re-use IDs of requests that have existed in the past.
-  u64 id = 0;
+  u64 id;
 
   // Only used for logging
-  u64 time_started_ticks = 0;
-  u64 realtime_started_us = 0;
-  u64 realtime_done_us = 0;
+  u64 time_started_ticks;
+  u64 realtime_started_us;
+  u64 realtime_done_us;
 };
 
 using ReadResult = std::pair<ReadRequest, std::vector<u8>>;

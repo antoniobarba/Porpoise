@@ -3,6 +3,7 @@
 
 #include "DolphinQt/WiiUpdate.h"
 
+#include <cinttypes>
 #include <future>
 
 #include <QCloseEvent>

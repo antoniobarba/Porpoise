@@ -13,6 +13,7 @@ static constexpr auto X_None = None;
 
 #include "Common/MsgHandler.h"
 #include "Core/Config/MainSettings.h"
+#include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "Core/State.h"
 
@@ -69,7 +70,7 @@ PlatformX11::~PlatformX11()
 
   if (m_display)
   {
-    if (Config::Get(Config::MAIN_SHOW_CURSOR) == Config::ShowCursor::Never)
+    if (SConfig::GetInstance().bHideCursor)
       XFreeCursor(m_display, m_blank_cursor);
 
     XCloseDisplay(m_display);
@@ -82,7 +83,7 @@ bool PlatformX11::Init()
   m_display = XOpenDisplay(nullptr);
   if (!m_display)
   {
-    PanicAlertFmt("No X11 display found");
+    PanicAlert("No X11 display found");
     return false;
   }
 
@@ -114,7 +115,7 @@ bool PlatformX11::Init()
   m_xrr_config = new X11Utils::XRRConfiguration(m_display, m_window);
 #endif
 
-  if (Config::Get(Config::MAIN_SHOW_CURSOR) == Config::ShowCursor::Never)
+  if (SConfig::GetInstance().bHideCursor)
   {
     // make a blank cursor
     Pixmap Blank;
@@ -199,13 +200,13 @@ void PlatformX11::ProcessEvents()
       {
         if (Core::GetState() == Core::State::Running)
         {
-          if (Config::Get(Config::MAIN_SHOW_CURSOR) == Config::ShowCursor::Never)
+          if (SConfig::GetInstance().bHideCursor)
             XUndefineCursor(m_display, m_window);
           Core::SetState(Core::State::Paused);
         }
         else
         {
-          if (Config::Get(Config::MAIN_SHOW_CURSOR) == Config::ShowCursor::Never)
+          if (SConfig::GetInstance().bHideCursor)
             XDefineCursor(m_display, m_window, m_blank_cursor);
           Core::SetState(Core::State::Running);
         }
@@ -242,15 +243,14 @@ void PlatformX11::ProcessEvents()
     case FocusIn:
     {
       m_window_focus = true;
-      if (Config::Get(Config::MAIN_SHOW_CURSOR) == Config::ShowCursor::Never &&
-          Core::GetState() != Core::State::Paused)
+      if (SConfig::GetInstance().bHideCursor && Core::GetState() != Core::State::Paused)
         XDefineCursor(m_display, m_window, m_blank_cursor);
     }
     break;
     case FocusOut:
     {
       m_window_focus = false;
-      if (Config::Get(Config::MAIN_SHOW_CURSOR) == Config::ShowCursor::Never)
+      if (SConfig::GetInstance().bHideCursor)
         XUndefineCursor(m_display, m_window);
     }
     break;

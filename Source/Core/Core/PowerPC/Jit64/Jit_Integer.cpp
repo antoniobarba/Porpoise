@@ -1,8 +1,6 @@
 // Copyright 2008 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Core/PowerPC/Jit64/Jit.h"
-
 #include <array>
 #include <limits>
 #include <vector>
@@ -13,9 +11,8 @@
 #include "Common/CommonTypes.h"
 #include "Common/MathUtil.h"
 #include "Common/x64Emitter.h"
-
 #include "Core/CoreTiming.h"
-#include "Core/PowerPC/Interpreter/ExceptionUtils.h"
+#include "Core/PowerPC/Jit64/Jit.h"
 #include "Core/PowerPC/Jit64/RegCache/JitRegCache.h"
 #include "Core/PowerPC/Jit64Common/Jit64PowerPCState.h"
 #include "Core/PowerPC/JitCommon/DivUtils.h"
@@ -941,13 +938,10 @@ void Jit64::subfx(UGeckoInstruction inst)
   INSTRUCTION_START
   JITDISABLE(bJITIntegerOff);
   int a = inst.RA, b = inst.RB, d = inst.RD;
-  const bool carry = !(inst.SUBOP10 & (1 << 5));
 
   if (a == b)
   {
     gpr.SetImmediate32(d, 0);
-    if (carry)
-      FinalizeCarry(true);
     if (inst.OE)
       GenerateConstantOverflow(false);
   }
@@ -955,8 +949,6 @@ void Jit64::subfx(UGeckoInstruction inst)
   {
     s32 i = gpr.SImm32(b), j = gpr.SImm32(a);
     gpr.SetImmediate32(d, i - j);
-    if (carry)
-      FinalizeCarry(j == 0 || Interpreter::Helper_Carry((u32)i, 0u - (u32)j));
     if (inst.OE)
       GenerateConstantOverflow((s64)i - (s64)j);
   }
@@ -971,20 +963,16 @@ void Jit64::subfx(UGeckoInstruction inst)
     {
       if (d != b)
         MOV(32, Rd, Rb);
-      if (carry)
-        FinalizeCarry(true);
       if (inst.OE)
         GenerateConstantOverflow(false);
     }
     else if (d == b)
     {
       SUB(32, Rd, Imm32(j));
-      if (carry)
-        FinalizeCarry(CC_NC);
       if (inst.OE)
         GenerateOverflow();
     }
-    else if (Rb.IsSimpleReg() && !carry && !inst.OE)
+    else if (Rb.IsSimpleReg() && !inst.OE)
     {
       LEA(32, Rd, MDisp(Rb.GetSimpleReg(), -j));
     }
@@ -992,8 +980,6 @@ void Jit64::subfx(UGeckoInstruction inst)
     {
       MOV(32, Rd, Rb);
       SUB(32, Rd, Imm32(j));
-      if (carry)
-        FinalizeCarry(CC_NC);
       if (inst.OE)
         GenerateOverflow();
     }
@@ -1007,8 +993,6 @@ void Jit64::subfx(UGeckoInstruction inst)
     if (d != a)
       MOV(32, Rd, Ra);
     NEG(32, Rd);
-    if (carry)
-      FinalizeCarry(CC_NC);
     if (inst.OE)
       GenerateOverflow();
   }
@@ -1019,21 +1003,21 @@ void Jit64::subfx(UGeckoInstruction inst)
     RCX64Reg Rd = gpr.Bind(d, RCMode::Write);
     RegCache::Realize(Ra, Rb, Rd);
 
-    if (d == a && d != b)
+    if (d == b)
     {
-      // special case, because sub isn't reversible
+      SUB(32, Rd, Ra);
+    }
+    else if (d == a)
+    {
       MOV(32, R(RSCRATCH), Ra);
       MOV(32, Rd, Rb);
       SUB(32, Rd, R(RSCRATCH));
     }
     else
     {
-      if (d != b)
-        MOV(32, Rd, Rb);
+      MOV(32, Rd, Rb);
       SUB(32, Rd, Ra);
     }
-    if (carry)
-      FinalizeCarry(CC_NC);
     if (inst.OE)
       GenerateOverflow();
   }
@@ -1508,28 +1492,22 @@ void Jit64::divwx(UGeckoInstruction inst)
     else if (divisor == 2 || divisor == -2)
     {
       X64Reg tmp = RSCRATCH;
-      X64Reg sign = tmp;
-
       if (!Ra.IsSimpleReg())
       {
-        // Load dividend from memory
         MOV(32, R(tmp), Ra);
         MOV(32, Rd, R(tmp));
       }
       else if (d == a)
       {
-        // Make a copy of the dividend
         MOV(32, R(tmp), Ra);
       }
       else
       {
-        // Copy dividend directly into destination
         MOV(32, Rd, Ra);
         tmp = Ra.GetSimpleReg();
-        sign = Rd;
       }
 
-      SHR(32, R(sign), Imm8(31));
+      SHR(32, Rd, Imm8(31));
       ADD(32, Rd, R(tmp));
       SAR(32, Rd, Imm8(1));
 
@@ -1558,11 +1536,11 @@ void Jit64::divwx(UGeckoInstruction inst)
       else if (d == a)
       {
         // Rd holds the dividend, while RSCRATCH holds the sum
-        // This is the reverse of the other cases
+        // This is opposite of the other cases
         dividend = Rd;
         sum = RSCRATCH;
         src = RSCRATCH;
-        // Negate condition to compensate for the swapped values
+        // Negate condition to compensate the swapped values
         cond = CC_S;
       }
       else
@@ -1678,21 +1656,19 @@ void Jit64::addx(UGeckoInstruction inst)
   INSTRUCTION_START
   JITDISABLE(bJITIntegerOff);
   int a = inst.RA, b = inst.RB, d = inst.RD;
-  bool carry = !(inst.SUBOP10 & (1 << 8));
 
   if (gpr.IsImm(a, b))
   {
-    const s32 i = gpr.SImm32(a), j = gpr.SImm32(b);
+    s32 i = gpr.SImm32(a), j = gpr.SImm32(b);
     gpr.SetImmediate32(d, i + j);
-    if (carry)
-      FinalizeCarry(Interpreter::Helper_Carry(i, j));
     if (inst.OE)
       GenerateConstantOverflow((s64)i + (s64)j);
   }
   else if (gpr.IsImm(a) || gpr.IsImm(b))
   {
-    const auto [i, j] = gpr.IsImm(a) ? std::pair(a, b) : std::pair(b, a);
-    const s32 imm = gpr.SImm32(i);
+    auto [i, j] = gpr.IsImm(a) ? std::pair(a, b) : std::pair(b, a);
+
+    s32 imm = gpr.SImm32(i);
     RCOpArg Rj = gpr.Use(j, RCMode::Read);
     RCX64Reg Rd = gpr.Bind(d, RCMode::Write);
     RegCache::Realize(Rj, Rd);
@@ -1701,20 +1677,16 @@ void Jit64::addx(UGeckoInstruction inst)
     {
       if (d != j)
         MOV(32, Rd, Rj);
-      if (carry)
-        FinalizeCarry(false);
       if (inst.OE)
         GenerateConstantOverflow(false);
     }
     else if (d == j)
     {
       ADD(32, Rd, Imm32(imm));
-      if (carry)
-        FinalizeCarry(CC_C);
       if (inst.OE)
         GenerateOverflow();
     }
-    else if (Rj.IsSimpleReg() && !carry && !inst.OE)
+    else if (Rj.IsSimpleReg() && !inst.OE)
     {
       LEA(32, Rd, MDisp(Rj.GetSimpleReg(), imm));
     }
@@ -1722,8 +1694,6 @@ void Jit64::addx(UGeckoInstruction inst)
     {
       MOV(32, Rd, Rj);
       ADD(32, Rd, Imm32(imm));
-      if (carry)
-        FinalizeCarry(CC_C);
       if (inst.OE)
         GenerateOverflow();
     }
@@ -1731,8 +1701,6 @@ void Jit64::addx(UGeckoInstruction inst)
     {
       MOV(32, Rd, Imm32(imm));
       ADD(32, Rd, Rj);
-      if (carry)
-        FinalizeCarry(CC_C);
       if (inst.OE)
         GenerateOverflow();
     }
@@ -1749,7 +1717,7 @@ void Jit64::addx(UGeckoInstruction inst)
       RCOpArg& Rnotd = (d == a) ? Rb : Ra;
       ADD(32, Rd, Rnotd);
     }
-    else if (Ra.IsSimpleReg() && Rb.IsSimpleReg() && !carry && !inst.OE)
+    else if (Ra.IsSimpleReg() && Rb.IsSimpleReg() && !inst.OE)
     {
       LEA(32, Rd, MRegSum(Ra.GetSimpleReg(), Rb.GetSimpleReg()));
     }
@@ -1758,8 +1726,6 @@ void Jit64::addx(UGeckoInstruction inst)
       MOV(32, Rd, Ra);
       ADD(32, Rd, Rb);
     }
-    if (carry)
-      FinalizeCarry(CC_C);
     if (inst.OE)
       GenerateOverflow();
   }
@@ -1836,6 +1802,49 @@ void Jit64::arithXex(UGeckoInstruction inst)
     }
   }
   FinalizeCarryOverflow(inst.OE, invertedCarry);
+  if (inst.Rc)
+    ComputeRC(d);
+}
+
+void Jit64::arithcx(UGeckoInstruction inst)
+{
+  INSTRUCTION_START
+  JITDISABLE(bJITIntegerOff);
+  bool add = !!(inst.SUBOP10 & 2);  // add or sub
+  int a = inst.RA, b = inst.RB, d = inst.RD;
+
+  {
+    RCOpArg Ra = gpr.Use(a, RCMode::Read);
+    RCOpArg Rb = gpr.Use(b, RCMode::Read);
+    RCX64Reg Rd = gpr.Bind(d, RCMode::Write);
+    RegCache::Realize(Ra, Rb, Rd);
+
+    if (d == a && d != b)
+    {
+      if (add)
+      {
+        ADD(32, Rd, Rb);
+      }
+      else
+      {
+        // special case, because sub isn't reversible
+        MOV(32, R(RSCRATCH), Ra);
+        MOV(32, Rd, Rb);
+        SUB(32, Rd, R(RSCRATCH));
+      }
+    }
+    else
+    {
+      if (d != b)
+        MOV(32, Rd, Rb);
+      if (add)
+        ADD(32, Rd, Ra);
+      else
+        SUB(32, Rd, Ra);
+    }
+  }
+
+  FinalizeCarryOverflow(inst.OE, !add);
   if (inst.Rc)
     ComputeRC(d);
 }
@@ -1948,29 +1957,18 @@ void Jit64::rlwimix(UGeckoInstruction inst)
   int a = inst.RA;
   int s = inst.RS;
 
-  const u32 mask = MakeRotationMask(inst.MB, inst.ME);
-
   if (gpr.IsImm(a, s))
   {
+    const u32 mask = MakeRotationMask(inst.MB, inst.ME);
     gpr.SetImmediate32(a,
                        (gpr.Imm32(a) & ~mask) | (Common::RotateLeft(gpr.Imm32(s), inst.SH) & mask));
-    if (inst.Rc)
-      ComputeRC(a);
-  }
-  else if (gpr.IsImm(s) && mask == 0xFFFFFFFF)
-  {
-    gpr.SetImmediate32(a, Common::RotateLeft(gpr.Imm32(s), inst.SH));
-
     if (inst.Rc)
       ComputeRC(a);
   }
   else
   {
     const u32 mask = MakeRotationMask(inst.MB, inst.ME);
-    const bool left_shift = mask == 0U - (1U << inst.SH);
-    const bool right_shift = mask == (1U << inst.SH) - 1;
     bool needs_test = false;
-	
     if (mask == 0 || (a == s && inst.SH == 0))
     {
       needs_test = true;
@@ -1978,7 +1976,7 @@ void Jit64::rlwimix(UGeckoInstruction inst)
     else if (mask == 0xFFFFFFFF)
     {
       RCOpArg Rs = gpr.Use(s, RCMode::Read);
-      RCX64Reg Ra = gpr.Bind(a, RCMode::Write);
+      RCX64Reg Ra = gpr.Bind(a, RCMode::Read);
       RegCache::Realize(Rs, Ra);
       RotateLeft(32, Ra, Rs, inst.SH);
       needs_test = true;
@@ -1990,73 +1988,63 @@ void Jit64::rlwimix(UGeckoInstruction inst)
       AndWithMask(Ra, ~mask);
       OR(32, Ra, Imm32(Common::RotateLeft(gpr.Imm32(s), inst.SH) & mask));
     }
-	else if (gpr.IsImm(a))
-    {
-      const u32 maskA = gpr.Imm32(a) & ~mask;
-
-      RCOpArg Rs = gpr.Use(s, RCMode::Read);
-      RCX64Reg Ra = gpr.Bind(a, RCMode::Write);
-      RegCache::Realize(Rs, Ra);
-
-      if (inst.SH == 0)
-      {
-        MOV(32, Ra, Rs);
-        AndWithMask(Ra, mask);
-      }
-      else if (left_shift)
-      {
-        MOV(32, Ra, Rs);
-        SHL(32, Ra, Imm8(inst.SH));
-      }
-      else if (right_shift)
-      {
-        MOV(32, Ra, Rs);
-        SHR(32, Ra, Imm8(32 - inst.SH));
-      }
-      else
-      {
-        RotateLeft(32, Ra, Rs, inst.SH);
-        AndWithMask(Ra, mask);
-      }
-
-      if (maskA)
-        OR(32, Ra, Imm32(maskA));
-      else
-        needs_test = true;
-    }
     else if (inst.SH)
     {
-      // TODO: perhaps consider pinsrb or abuse of AH
-      RCOpArg Rs = gpr.Use(s, RCMode::Read);
-      RCX64Reg Ra = gpr.Bind(a, RCMode::ReadWrite);
-      RegCache::Realize(Rs, Ra);
+      bool isLeftShift = mask == 0U - (1U << inst.SH);
+      bool isRightShift = mask == (1U << inst.SH) - 1;
+      if (gpr.IsImm(a))
+      {
+        u32 maskA = gpr.Imm32(a) & ~mask;
 
-      if (left_shift)
-      {
-        MOV(32, R(RSCRATCH), Rs);
-        SHL(32, R(RSCRATCH), Imm8(inst.SH));
-      }
-      else if (right_shift)
-      {
-        MOV(32, R(RSCRATCH), Rs);
-        SHR(32, R(RSCRATCH), Imm8(32 - inst.SH));
+        RCOpArg Rs = gpr.Use(s, RCMode::Read);
+        RCX64Reg Ra = gpr.Bind(a, RCMode::Write);
+        RegCache::Realize(Rs, Ra);
+
+        if (isLeftShift)
+        {
+          MOV(32, Ra, Rs);
+          SHL(32, Ra, Imm8(inst.SH));
+        }
+        else if (isRightShift)
+        {
+          MOV(32, Ra, Rs);
+          SHR(32, Ra, Imm8(32 - inst.SH));
+        }
+        else
+        {
+          RotateLeft(32, Ra, Rs, inst.SH);
+          AndWithMask(Ra, mask);
+        }
+        OR(32, Ra, Imm32(maskA));
       }
       else
       {
-        RotateLeft(32, RSCRATCH, Rs, inst.SH);
-      }
+        // TODO: common cases of this might be faster with pinsrb or abuse of AH
+        RCOpArg Rs = gpr.Use(s, RCMode::Read);
+        RCX64Reg Ra = gpr.Bind(a, RCMode::ReadWrite);
+        RegCache::Realize(Rs, Ra);
 
-      if (mask == 0xFF || mask == 0xFFFF)
-      {
-        MOV(mask == 0xFF ? 8 : 16, Ra, R(RSCRATCH));
-        needs_test = true;
-      }
-      else
-      {
-        if (!left_shift && !right_shift)
+        if (isLeftShift)
+        {
+          MOV(32, R(RSCRATCH), Rs);
+          SHL(32, R(RSCRATCH), Imm8(inst.SH));
+          AndWithMask(Ra, ~mask);
+          OR(32, Ra, R(RSCRATCH));
+        }
+        else if (isRightShift)
+        {
+          MOV(32, R(RSCRATCH), Rs);
+          SHR(32, R(RSCRATCH), Imm8(32 - inst.SH));
+          AndWithMask(Ra, ~mask);
+          OR(32, Ra, R(RSCRATCH));
+        }
+        else
+        {
+          RotateLeft(32, RSCRATCH, Rs, inst.SH);
+          XOR(32, R(RSCRATCH), Ra);
           AndWithMask(RSCRATCH, mask);
-        AndWithMask(Ra, ~mask);
-        OR(32, Ra, R(RSCRATCH));
+          XOR(32, Ra, R(RSCRATCH));
+        }
       }
     }
     else
@@ -2064,18 +2052,9 @@ void Jit64::rlwimix(UGeckoInstruction inst)
       RCX64Reg Rs = gpr.Bind(s, RCMode::Read);
       RCX64Reg Ra = gpr.Bind(a, RCMode::ReadWrite);
       RegCache::Realize(Rs, Ra);
-
-      if (mask == 0xFF || mask == 0xFFFF)
-      {
-        MOV(mask == 0xFF ? 8 : 16, Ra, Rs);
-        needs_test = true;
-      }
-      else
-      {
-        XOR(32, Ra, Rs);
-        AndWithMask(Ra, ~mask);
-        XOR(32, Ra, Rs);
-      }
+      XOR(32, Ra, Rs);
+      AndWithMask(Ra, ~mask);
+      XOR(32, Ra, Rs);
     }
     if (inst.Rc)
       ComputeRC(a, needs_test);
@@ -2100,7 +2079,11 @@ void Jit64::rlwnmx(UGeckoInstruction inst)
     RCOpArg Rs = gpr.Use(s, RCMode::Read);
     RegCache::Realize(Ra, Rs);
 
-    RotateLeft(32, Ra, Rs, amount);
+    if (a != s)
+      MOV(32, Ra, Rs);
+
+    if (amount)
+      ROL(32, Ra, Imm8(amount));
 
     // we need flags if we're merging the branch
     if (inst.Rc && CheckMergedBranch(0))
@@ -2567,11 +2550,9 @@ void Jit64::twX(UGeckoInstruction inst)
       fixups.push_back(f);
     }
   }
+  FixupBranch dont_trap = J();
 
-  if (!fixups.empty())
   {
-    SwitchToFarCode();
-
     RCForkGuard gpr_guard = gpr.Fork();
     RCForkGuard fpr_guard = fpr.Fork();
 
@@ -2581,15 +2562,14 @@ void Jit64::twX(UGeckoInstruction inst)
     }
     LOCK();
     OR(32, PPCSTATE(Exceptions), Imm32(EXCEPTION_PROGRAM));
-    MOV(32, PPCSTATE_SRR1, Imm32(static_cast<u32>(ProgramExceptionCause::Trap)));
 
     gpr.Flush();
     fpr.Flush();
 
     WriteExceptionExit();
-
-    SwitchToNearCode();
   }
+
+  SetJumpTarget(dont_trap);
 
   if (!analyzer.HasOption(PPCAnalyst::PPCAnalyzer::OPTION_CONDITIONAL_CONTINUE))
   {

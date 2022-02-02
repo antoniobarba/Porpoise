@@ -1,12 +1,11 @@
 // Copyright 2014 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "Common/PcapFile.h"
-
 #include <chrono>
 
 #include "Common/CommonTypes.h"
 #include "Common/IOFile.h"
+#include "Common/PcapFile.h"
 
 namespace Common
 {

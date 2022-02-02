@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cinttypes>
 #include <cstring>
 #include <memory>
 #include <mutex>
@@ -152,7 +153,7 @@ std::vector<std::string> GCMemcardDirectory::GetFileNamesForGameID(const std::st
   return filenames;
 }
 
-GCMemcardDirectory::GCMemcardDirectory(const std::string& directory, ExpansionInterface::Slot slot,
+GCMemcardDirectory::GCMemcardDirectory(const std::string& directory, int slot,
                                        const Memcard::HeaderData& header_data, u32 game_id)
     : MemoryCardBase(slot, header_data.m_size_mb), m_game_id(game_id), m_last_block(-1),
       m_hdr(header_data), m_bat1(header_data.m_size_mb), m_saves(0), m_save_directory(directory),
@@ -240,7 +241,7 @@ void GCMemcardDirectory::FlushThread()
     return;
   }
 
-  Common::SetCurrentThreadName(fmt::format("Memcard {} flushing thread", m_card_slot).c_str());
+  Common::SetCurrentThreadName(fmt::format("Memcard {} flushing thread", m_card_index).c_str());
 
   constexpr std::chrono::seconds flush_interval{1};
   while (true)
@@ -705,10 +706,11 @@ void GCMemcardDirectory::DoState(PointerWrap& p)
   }
 }
 
-void MigrateFromMemcardFile(const std::string& directory_name, ExpansionInterface::Slot card_slot)
+void MigrateFromMemcardFile(const std::string& directory_name, int card_index)
 {
   File::CreateFullPath(directory_name);
-  std::string ini_memcard = Config::Get(Config::GetInfoForMemcardPath(card_slot));
+  std::string ini_memcard = (card_index == 0) ? Config::Get(Config::MAIN_MEMCARD_A_PATH) :
+                                                Config::Get(Config::MAIN_MEMCARD_B_PATH);
   if (File::Exists(ini_memcard))
   {
     auto [error_code, memcard] = Memcard::GCMemcard::Open(ini_memcard.c_str());

@@ -1,8 +1,6 @@
 // Copyright 2016 Dolphin Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "DiscIO/Enums.h"
-
 #include <map>
 #include <string>
 
@@ -11,6 +9,7 @@
 #include "Common/CommonTypes.h"
 #include "Common/Logging/Log.h"
 #include "Common/MsgHandler.h"
+#include "DiscIO/Enums.h"
 
 namespace DiscIO
 {

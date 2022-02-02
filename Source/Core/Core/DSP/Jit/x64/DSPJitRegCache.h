@@ -170,14 +170,14 @@ private:
   void MovToMemory(size_t reg);
   void FlushMemBackedRegs();
 
-  std::array<DynamicReg, 37> m_regs{};
-  std::array<X64CachedReg, 16> m_xregs{};
+  std::array<DynamicReg, 37> m_regs;
+  std::array<X64CachedReg, 16> m_xregs;
 
   DSPEmitter& m_emitter;
   bool m_is_temporary;
-  bool m_is_merged = false;
+  bool m_is_merged;
 
-  int m_use_ctr = 0;
+  int m_use_ctr;
 };
 
 }  // namespace DSP::JIT::x64

@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-#include "InputCommon/ControllerInterface/ControllerInterface.h"
-
 namespace ciface::Pipes
 {
 // To create a piped controller input, create a named pipe in the

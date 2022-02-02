@@ -36,29 +36,24 @@ void SWVertexLoader::DrawCurrentBatch(u32 base_index, u32 num_indices, u32 base_
 {
   DebugUtil::OnObjectBegin();
 
-  using OpcodeDecoder::Primitive;
-  Primitive primitive_type = Primitive::GX_DRAW_QUADS;
+  u8 primitiveType = 0;
   switch (m_current_primitive_type)
   {
   case PrimitiveType::Points:
-    primitive_type = Primitive::GX_DRAW_POINTS;
+    primitiveType = OpcodeDecoder::GX_DRAW_POINTS;
     break;
   case PrimitiveType::Lines:
-    primitive_type = Primitive::GX_DRAW_LINES;
+    primitiveType = OpcodeDecoder::GX_DRAW_LINES;
     break;
   case PrimitiveType::Triangles:
-    primitive_type = Primitive::GX_DRAW_TRIANGLES;
+    primitiveType = OpcodeDecoder::GX_DRAW_TRIANGLES;
     break;
   case PrimitiveType::TriangleStrip:
-    primitive_type = Primitive::GX_DRAW_TRIANGLE_STRIP;
+    primitiveType = OpcodeDecoder::GX_DRAW_TRIANGLE_STRIP;
     break;
   }
 
-  // Flush bounding box here because software overrides the base function
-  if (g_renderer->IsBBoxEnabled())
-    g_renderer->BBoxFlush();
-
-  m_setup_unit.Init(primitive_type);
+  m_setup_unit.Init(primitiveType);
 
   // set all states with are stored within video sw
   for (int i = 0; i < 4; i++)
@@ -75,7 +70,7 @@ void SWVertexLoader::DrawCurrentBatch(u32 base_index, u32 num_indices, u32 base_
     memset(static_cast<void*>(&m_vertex), 0, sizeof(m_vertex));
 
     // parse the videocommon format to our own struct format (m_vertex)
-    SetFormat();
+    SetFormat(g_main_cp_state.last_id, primitiveType);
     ParseVertex(VertexLoaderManager::GetCurrentVertexFormat()->GetVertexDeclaration(), index);
 
     // transform this vertex so that it can be used for rasterization (outVertex)
@@ -99,7 +94,7 @@ void SWVertexLoader::DrawCurrentBatch(u32 base_index, u32 num_indices, u32 base_
   DebugUtil::OnObjectEnd();
 }
 
-void SWVertexLoader::SetFormat()
+void SWVertexLoader::SetFormat(u8 attributeIndex, u8 primitiveType)
 {
   // matrix index from xf regs or cp memory?
   if (xfmem.MatrixIndexA.PosNormalMtxIdx != g_main_cp_state.matrix_index_a.PosNormalMtxIdx ||
@@ -145,7 +140,7 @@ static void ReadVertexAttribute(T* dst, DataReader src, const AttributeFormat& f
   if (format.enable)
   {
     src.Skip(format.offset);
-    src.Skip(base_component * GetElementSize(format.type));
+    src.Skip(base_component * (1 << (format.type >> 1)));
 
     int i;
     for (i = 0; i < std::min(format.components - base_component, components); i++)
@@ -153,24 +148,24 @@ static void ReadVertexAttribute(T* dst, DataReader src, const AttributeFormat& f
       int i_dst = reverse ? components - i - 1 : i;
       switch (format.type)
       {
-      case ComponentFormat::UByte:
+      case VAR_UNSIGNED_BYTE:
         dst[i_dst] = ReadNormalized<T, u8>(src.Read<u8, swap>());
         break;
-      case ComponentFormat::Byte:
+      case VAR_BYTE:
         dst[i_dst] = ReadNormalized<T, s8>(src.Read<s8, swap>());
         break;
-      case ComponentFormat::UShort:
+      case VAR_UNSIGNED_SHORT:
         dst[i_dst] = ReadNormalized<T, u16>(src.Read<u16, swap>());
         break;
-      case ComponentFormat::Short:
+      case VAR_SHORT:
         dst[i_dst] = ReadNormalized<T, s16>(src.Read<s16, swap>());
         break;
-      case ComponentFormat::Float:
+      case VAR_FLOAT:
         dst[i_dst] = ReadNormalized<T, float>(src.Read<float, swap>());
         break;
       }
 
-      ASSERT_MSG(VIDEO, !format.integer || format.type != ComponentFormat::Float,
+      ASSERT_MSG(VIDEO, !format.integer || format.type != VAR_FLOAT,
                  "only non-float values are allowed to be streamed as integer");
     }
     for (; i < components; i++)

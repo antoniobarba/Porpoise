@@ -167,7 +167,11 @@ void GeckoCodeWidget::OnSelectionChanged()
   m_code_view->clear();
 
   for (const auto& c : code.codes)
-    m_code_view->append(QString::fromStdString(c.original_line));
+  {
+    m_code_view->append(QStringLiteral("%1 %2")
+                            .arg(c.address, 8, 16, QLatin1Char('0'))
+                            .arg(c.data, 8, 16, QLatin1Char('0')));
+  }
 }
 
 void GeckoCodeWidget::OnItemChanged(QListWidgetItem* item)
