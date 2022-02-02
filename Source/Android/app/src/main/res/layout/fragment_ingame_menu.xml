@@ -122,6 +122,7 @@
     <Button
         android:id="@+id/menu_exit"
         style="@style/InGameMenuOption"
+        android:letterSpacing="0"
         android:layout_width="210dp"
         android:layout_gravity="center"
         android:background="@drawable/button_primary_gradient_shadow"
