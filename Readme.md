@@ -8,6 +8,9 @@ Both versions are on github and I encourage determined or curious people to use 
 
 So special thanks to @Lynx for his godly help and contributions and the testers; especially @Gamer 64 for his assistance over the recent months. As well as to @Jos for the great updates, knowledge and development over at Dolphin Official (https://dolphin-emu.org/download/). Thanks to everyone for supporting the app, development and my endeavors in learning coding from scratch.
 
+For those that want to still keep MMJR2 I advise hopping over to @Lumince fork of this build instead. His build and updates aren't anything crazy and its just updates from Dolphin Official into MMJR2, with additional themes. So no worries on stability or "hacky" unstable performance changes. If there are any newer features that I can add in I would probably push a PR to his or dolphin official going forward.]
+(https://github.com/Lumince/Dolphin-MMJR2/releases)
+
 =================================
 
 
