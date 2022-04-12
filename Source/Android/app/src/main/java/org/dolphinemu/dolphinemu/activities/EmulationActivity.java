@@ -744,6 +744,7 @@ public final class EmulationActivity extends AppCompatActivity
 
       case MENU_ACTION_EXIT:
         mEmulationFragment.stopEmulation();
+        finish();
         break;
     }
   }
