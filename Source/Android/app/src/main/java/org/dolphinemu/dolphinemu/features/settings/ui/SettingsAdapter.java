@@ -44,8 +44,6 @@ import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.SingleChoiceVie
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.SliderSelectorViewHolder;
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.SliderViewHolder;
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.SubmenuViewHolder;
-import org.dolphinemu.dolphinemu.ui.main.MainPresenter;
-import org.dolphinemu.dolphinemu.model.AppTheme;
 import org.dolphinemu.dolphinemu.utils.DirectoryInitialization;
 import org.dolphinemu.dolphinemu.utils.FileBrowserHelper;
 import org.dolphinemu.dolphinemu.utils.Log;
@@ -53,10 +51,7 @@ import org.dolphinemu.dolphinemu.utils.Log;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Map;
 
 public final class SettingsAdapter extends RecyclerView.Adapter<SettingViewHolder>
         implements DialogInterface.OnClickListener, SeekBar.OnSeekBarChangeListener

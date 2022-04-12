@@ -7,6 +7,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.SparseIntArray;
@@ -17,6 +18,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -47,7 +49,7 @@ import org.dolphinemu.dolphinemu.fragments.SaveLoadStateFragment;
 import org.dolphinemu.dolphinemu.model.AppTheme;
 import org.dolphinemu.dolphinemu.overlay.InputOverlay;
 import org.dolphinemu.dolphinemu.overlay.InputOverlayPointer;
-import org.dolphinemu.dolphinemu.ui.main.MainPresenter;
+import org.dolphinemu.dolphinemu.ui.main.MainActivity;
 import org.dolphinemu.dolphinemu.utils.ContinueLaunchCallback;
 import org.dolphinemu.dolphinemu.utils.ControllerMappingHelper;
 import org.dolphinemu.dolphinemu.utils.FileBrowserHelper;
@@ -170,7 +172,7 @@ public final class EmulationActivity extends AppCompatActivity
     buttonsActionsMap.append(R.id.menu_emulation_ir_recenter,
             EmulationActivity.MENU_SET_IR_RECENTER);
     buttonsActionsMap.append(R.id.menu_emulation_set_ir_mode,
-      EmulationActivity.MENU_SET_IR_MODE);
+            EmulationActivity.MENU_SET_IR_MODE);
     buttonsActionsMap.append(R.id.menu_emulation_set_ir_sensitivity,
             EmulationActivity.MENU_SET_IR_SENSITIVITY);
     buttonsActionsMap.append(R.id.menu_emulation_choose_doubletap,
@@ -178,9 +180,9 @@ public final class EmulationActivity extends AppCompatActivity
     buttonsActionsMap.append(R.id.menu_emulation_motion_controls,
             EmulationActivity.MENU_ACTION_MOTION_CONTROLS);
     buttonsActionsMap.append(R.id.menu_emulation_set_joystick_mode,
-      EmulationActivity.MENU_ACTION_SET_JOYSTICK_MODE);
+            EmulationActivity.MENU_ACTION_SET_JOYSTICK_MODE);
     buttonsActionsMap.append(R.id.menu_emulation_hotkey,
-      EmulationActivity.MENU_ACTION_HOTKEY);
+            EmulationActivity.MENU_ACTION_HOTKEY);
   }
 
   public static void launch(FragmentActivity activity, String filePath, boolean riivolution)
@@ -292,7 +294,7 @@ public final class EmulationActivity extends AppCompatActivity
   {
     super.onCreate(savedInstanceState);
 
-    MainPresenter.skipRescanningLibrary();
+    MainActivity.skipRescanningLibrary();
 
     if (savedInstanceState == null)
     {
@@ -379,6 +381,19 @@ public final class EmulationActivity extends AppCompatActivity
   protected void onResume()
   {
     super.onResume();
+
+    // Only android 9+ support this feature.
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+    {
+      WindowManager.LayoutParams attributes = getWindow().getAttributes();
+
+      attributes.layoutInDisplayCutoutMode =
+              BooleanSetting.MAIN_EXPAND_TO_CUTOUT_AREA.getBoolean(mSettings) ?
+                      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES :
+                      WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_NEVER;
+
+      getWindow().setAttributes(attributes);
+    }
 
     updateOrientation();
 
@@ -1018,11 +1033,11 @@ public final class EmulationActivity extends AppCompatActivity
     AlertDialog.Builder builder = new AlertDialog.Builder(this);
     builder.setTitle(R.string.emulation_hotkey);
     builder.setSingleChoiceItems(R.array.hotkeyModeEntries,
-      mPreferences.getInt("hotkeyMode", 0),
-      (dialog, indexSelected) ->
-      {
-        editor.putInt("hotkeyMode", indexSelected);
-      });
+            mPreferences.getInt("hotkeyMode", 0),
+            (dialog, indexSelected) ->
+            {
+              editor.putInt("hotkeyMode", indexSelected);
+            });
     builder.setPositiveButton(R.string.ok, (dialogInterface, i) ->
     {
       editor.apply();
@@ -1038,11 +1053,11 @@ public final class EmulationActivity extends AppCompatActivity
     AlertDialog.Builder builder = new AlertDialog.Builder(this);
     builder.setTitle(R.string.emulation_joystick_mode);
     builder.setSingleChoiceItems(R.array.joystickEmulationModeEntries,
-      mPreferences.getInt("joystickEmulationMode", 0),
-      (dialog, indexSelected) ->
-      {
-        editor.putInt("joystickEmulationMode", indexSelected);
-      });
+            mPreferences.getInt("joystickEmulationMode", 0),
+            (dialog, indexSelected) ->
+            {
+              editor.putInt("joystickEmulationMode", indexSelected);
+            });
     builder.setPositiveButton(R.string.ok, (dialogInterface, i) ->
     {
       editor.apply();
@@ -1058,15 +1073,15 @@ public final class EmulationActivity extends AppCompatActivity
     AlertDialog.Builder builder = new AlertDialog.Builder(this);
     builder.setTitle(R.string.emulation_ir_mode);
     builder.setSingleChoiceItems(R.array.irModeEntries,
-      mPreferences.getInt("irMode", InputOverlayPointer.MODE_FOLLOW),
-      (dialog, indexSelected) ->
-      {
-        editor.putInt("irMode", indexSelected);
-      });
+            mPreferences.getInt("irMode", InputOverlayPointer.MODE_FOLLOW),
+            (dialog, indexSelected) ->
+            {
+              editor.putInt("irMode", indexSelected);
+            });
     builder.setPositiveButton(R.string.ok, (dialogInterface, i) ->
-      {
-        editor.apply();
-      });
+    {
+      editor.apply();
+    });
 
     builder.show();
   }

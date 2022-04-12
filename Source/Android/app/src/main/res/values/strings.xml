@@ -183,6 +183,8 @@
     <!-- Interface Preference Fragment -->
     <string name="interface_submenu">Interface</string>
     <string name="emulation_screen_orientation">Screen Orientation During Emulation</string>
+    <string name="expand_to_cutout_area">Expand to Cutout Area</string>
+    <string name="expand_to_cutout_area_description">Expands the display area to include the cutout (or notch) area.</string>
     <string name="panic_handlers">Use Panic Handlers</string>
     <string name="panic_handlers_description">Show a message box when a potentially serious error has occurred. Disabling this may avoid annoying and non-fatal messages, but it may result in major crashes having no explanation at all.</string>
     <string name="osd_messages">Show On-Screen Display Messages</string>
@@ -397,6 +399,7 @@
     <string name="grid_menu_gcpad_settings">GameCube Input</string>
     <string name="grid_menu_wiimote_settings">Wii Input</string>
     <string name="grid_menu_refresh">Refresh Library</string>
+    <string name="grid_menu_toggle_gamelist">Toggle Game List</string>
     <string name="grid_menu_open_file">Open File</string>
     <string name="grid_menu_install_wad">Install WAD</string>
     <string name="grid_menu_import_wii_save">Import Wii Save</string>
@@ -540,6 +543,10 @@ It can efficiently compress both junk data and encrypted Wii data.
 
     <!-- Extra Leanback Homescreen Channels-->
     <string name="homescreen_favorites">Favorites</string>
+
+    <string name="game_platform_wii">[Wii] %1$s</string>
+    <string name="game_platform_ngc">[NGC] %1$s</string>
+    <string name="game_platform_ware">[Ware] %1$s</string>
 
     <string name="select_dir">Select This Directory</string>
 
